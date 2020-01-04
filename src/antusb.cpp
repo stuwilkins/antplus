@@ -16,6 +16,8 @@
  * =====================================================================================
  */
 
+#include <unistd.h>
+
 #include "debug.h"
 #include "antusb.h"
 #include "ant.h"
@@ -27,6 +29,8 @@ AntUsb::AntUsb(void)
     usb_config = NULL;
     readEndpoint = -1;
     writeEndpoint = -1;
+    writeTimeout = 256;
+    readTimeout = 256;
 }
 
 AntUsb::~AntUsb(void)
@@ -158,10 +162,10 @@ int AntUsb::setup(void)
                     int ep = config->interface[0].altsetting[0].endpoint[i].bEndpointAddress;
                     if(ep & LIBUSB_ENDPOINT_DIR_MASK)
                     {
-                        DEBUG_PRINT("Read Endpoint = %d (%d)\n", ep, i);
+                        DEBUG_PRINT("Read Endpoint = 0x%02X (%d)\n", ep, i);
                         readEndpoint = ep;
                     } else {
-                        DEBUG_PRINT("Write Endpoint = %d (%d)\n", ep, i);
+                        DEBUG_PRINT("Write Endpoint = 0x%02X (%d)\n", ep, i);
                         writeEndpoint = ep;
                     }
                 }
@@ -201,11 +205,18 @@ int AntUsb::setup(void)
     return NOERROR;
 }
 
-int AntUsb::bulk_read(unsigned char *bytes, int size, int timeout)
+int AntUsb::bulkRead(unsigned char *bytes, int size, int timeout)
 {
     int actualSize;
-    int rc = libusb_bulk_transfer(usb_handle, readEndpoint, (unsigned char*) bytes,
-            size, &actualSize, timeout);
+    int rc = libusb_bulk_transfer(usb_handle, readEndpoint,
+            bytes, size, &actualSize, timeout);
+
+#ifdef DEBUG_OUTPUT
+    char sb[100];
+    bytestream_to_string(sb, bytes, actualSize);
+    DEBUG_PRINT("Recieved %d : %s\n", actualSize, sb);
+#endif
+
 
     if (rc < 0 && rc != LIBUSB_ERROR_TIMEOUT)
     {
@@ -216,41 +227,109 @@ int AntUsb::bulk_read(unsigned char *bytes, int size, int timeout)
     return actualSize;
 }
 
-int AntUsb::bulk_write(unsigned char *bytes, int size, int timeout)
+int AntUsb::bulkWrite(unsigned char *bytes, int size, int timeout)
 {
     int actualSize;
-    int rc = libusb_bulk_transfer(usb_handle, writeEndpoint, (unsigned char*) bytes,
-            size, &actualSize, timeout);
+    int rc = libusb_bulk_transfer(usb_handle, writeEndpoint,
+            bytes, size, &actualSize, timeout);
 
-    if (rc < 0 && rc != LIBUSB_ERROR_TIMEOUT)
+    if (rc < 0)
     {
         DEBUG_PRINT("libusb_bulk_transfer failed with rc=%d\n", rc);
         return rc;
     }
 
+#ifdef DEBUG_OUTPUT
+    char sb[100];
+    bytestream_to_string(sb, bytes, actualSize);
+    DEBUG_PRINT("Wrote %d : %s\n", actualSize, sb);
+#endif
+
     return actualSize;
+}
+
+int AntUsb::sendMessage(AntMessage &message)
+{
+    unsigned char msg[ANT_MAX_MESSAGE_SIZE];
+    int msg_len;
+    message.encode(msg, &msg_len);
+    return bulkWrite(msg, msg_len, writeTimeout);
+}
+
+int AntUsb::readMessage(AntMessage *message)
+{
+    unsigned char bytes[ANT_MAX_MESSAGE_SIZE];
+    int nbytes = bulkRead(bytes, ANT_MAX_MESSAGE_SIZE, readTimeout);
+    if(nbytes)
+    {
+        message->decode(bytes, nbytes);
+    } else {
+        return -1;
+    }
+
+    return nbytes;
+}
+
+int AntUsb::reset(void)
+{
+    DEBUG_COMMENT("Sending ANT_SYSTEM_RESET\n");
+    AntMessage resetMessage(ANT_SYSTEM_RESET, NULL, 1);
+    sendMessage(resetMessage);
+
+    usleep(500000L);
+
+    AntMessage reply;
+    readMessage(&reply);
+    reply.parse();
+
+    return 0;
+}
+
+int AntUsb::setNetworkKey(void)
+{
+    unsigned char key[] = ANT_NETWORK_KEY;
+
+    DEBUG_COMMENT("Sending ANT_SET_NETWORK\n");
+    AntMessage netkey(ANT_SET_NETWORK, key, ANT_NETWORK_KEY_LEN);
+    return sendMessage(netkey);
+}
+
+int AntUsb::assignChannel(int chanNum, bool master)
+{
+    int rc;
+    AntMessage reply;
+
+    DEBUG_COMMENT("Sending ANT_UNASSIGN_CHANNEL\n");
+    AntMessage unassign(ANT_UNASSIGN_CHANNEL, chanNum);
+    rc = sendMessage(unassign);
+    rc = readMessage(&reply);
+    reply.parse();
+
+    DEBUG_COMMENT("Sending ANT_ASSIGN_CHANNEL\n");
+    AntMessage assign(ANT_ASSIGN_CHANNEL, (unsigned int)chanNum,
+            master ? CHANNEL_TYPE_TX : CHANNEL_TYPE_RX,
+            0); // receive channel on network 1
+    rc = sendMessage(assign);
+    rc = readMessage(&reply);
+    reply.parse();
 }
 
 
 int main(int argc, char *argv[])
 {
-    AntUsb antusb;
     unsigned char bytes[256];
+    int nbytes;
+    AntUsb antusb;
 
     antusb.init();
     antusb.setup();
 
-    unsigned char msg[ANT_MAX_MESSAGE_SIZE];
-    int msg_len;
-    unsigned char data[1];
-    data[0] = 0x0;
-    ant_create_message(msg, &msg_len, ANT_SYSTEM_RESET, data, 1);
+    antusb.reset();
 
-    antusb.bulk_write(msg, msg_len, 128);
+    antusb.setNetworkKey();
+    nbytes = antusb.bulkRead(bytes, 256, 256);
 
-    for(;;)
-    {
-        antusb.bulk_read(bytes, 256, 128);
-    }
+    antusb.assignChannel(0, 0);
+//nbytes = antusb.bulkRead(bytes, 256, 256);
     return 0;
 }

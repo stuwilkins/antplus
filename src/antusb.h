@@ -20,6 +20,7 @@
 #define _ANTUSB_H
 
 #include <libusb-1.0/libusb.h>
+#include "ant.h"
 
 #define GARMIN_USB2_VID   0x0fcf
 #define GARMIN_USB2_PID   0x1008
@@ -36,14 +37,21 @@ class AntUsb {
         ~AntUsb(void);
         int init(void);
         int setup(void);
-        int bulk_read(unsigned char *bytes, int size, int timeout);
-        int bulk_write(unsigned char *bytes, int size, int timeout);
+        int bulkRead(unsigned char *bytes, int size, int timeout);
+        int bulkWrite(unsigned char *bytes, int size, int timeout);
+        int sendMessage(AntMessage &message);
+        int readMessage(AntMessage *message);
+        int reset(void);
+        int setNetworkKey(void);
+        int assignChannel(int chanNum, bool master);
     private:
         libusb_context *usb_ctx;
         libusb_device_handle *usb_handle;
         libusb_config_descriptor *usb_config;
         int readEndpoint;
         int writeEndpoint;
+        int readTimeout;
+        int writeTimeout;
 };
 
 #endif
