@@ -24,9 +24,21 @@
 // SOFTWARE.
 //
 
-#ifndef SRC_ANTUSB_H_
-#define SRC_ANTUSB_H_
 
+#include "ant.h"
+#include "antchannel.h"
+#include "debug.h"
 
+AntChannel::AntChannel(AntUsb *ant, int chan) {
+    chanNum = chan;
+    antusb = ant;
+}
 
-#endif  // SRC_ANTUSB_H_
+int AntChannel::start(void) {
+    // Start a channel config
+    // Claim the channel.
+    antusb->assignChannel(chanNum, 0);
+
+    return NOERROR;
+}
+

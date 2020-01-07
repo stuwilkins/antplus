@@ -24,9 +24,23 @@
 // SOFTWARE.
 //
 
-#ifndef SRC_ANTUSB_H_
-#define SRC_ANTUSB_H_
+#ifndef SRC_ANTCHANNEL_H_
+#define SRC_ANTCHANNEL_H_
 
 
+class AntChannel {
+ public:
+    enum {
+        NOERROR = 0,
+        ERROR = -1
+    };
+    AntChannel(AntUsb *ant, int channel);
+    int start(void);
 
-#endif  // SRC_ANTUSB_H_
+ private:
+    int chanNum;
+    AntUsb* antusb;
+};
+
+
+#endif  // SRC_ANTCHANNEL_H_

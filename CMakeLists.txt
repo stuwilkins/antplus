@@ -4,7 +4,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(PreventInSourceBuilds)
 include(cpplint)
-#cpplint_add_subdirectory(src)
+cpplint_add_subdirectory(src)
 
 # Add __FILENAME__ with short path
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
