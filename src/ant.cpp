@@ -26,180 +26,13 @@
 
 #include <string.h>
 #include <cstdio>
+#include <chrono>
 
 #include "ant.h"
 #include "antdevice.h"
+#include "antchannel.h"
+#include "antusb.h"
 #include "debug.h"
-
-void bytestream_to_string(char *out, int n_out, uint8_t *bytes, int n_bytes) {
-    if (n_bytes == 0) {
-        out[0] = 0;
-        return;
-    }
-
-    char *_dbmsg = out;
-
-    for (int i=0; i < n_bytes; i++) {
-        snprintf(_dbmsg, n_out - (3 * i), "%02X:", bytes[i]);
-        _dbmsg += 3;
-    }
-    *(_dbmsg-1) = 0;
-}
-
-AntMessage::AntMessage(void) {
-    antType = 0x00;
-    antChannel = 0x00;
-    for (int i=0; i < ANT_MAX_DATA_SIZE; i++) {
-        antData[i] = 0x00;
-    }
-    antDataLen = 0;
-}
-
-AntMessage::AntMessage(uint8_t *data, int data_len)
-    : AntMessage() {
-    // Decode
-    this->decode(data, data_len);
-}
-
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t *data, int len)
-    : AntMessage() {
-    // Copy to internal structure
-    antType = type;
-    antChannel = chan;
-    antDataLen = len;
-
-    for (int i=0; i < len; i++) {
-        antData[i] = data[i];
-    }
-}
-
-AntMessage::AntMessage(uint8_t type, uint8_t chan)
-    : AntMessage() {
-    antType = type;
-    antChannel = chan;
-    antDataLen = 0;
-}
-
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0)
-    : AntMessage() {
-    antType = type;
-    antChannel = chan;
-    antDataLen = 1;
-    antData[0] = b0;
-}
-
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
-        uint8_t b1)
-    : AntMessage() {
-    antType = type;
-    antChannel = chan;
-    antDataLen = 2;
-    antData[0] = b0;
-    antData[1] = b1;
-}
-
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
-        uint8_t b1, uint8_t b2)
-    : AntMessage() {
-    antType = type;
-    antChannel = chan;
-    antDataLen = 3;
-    antData[0] = b0;
-    antData[1] = b1;
-    antData[2] = b2;
-}
-
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
-        uint8_t b1, uint8_t b2, uint8_t b3)
-    : AntMessage() {
-    antType = type;
-    antChannel = chan;
-    antDataLen = 4;
-    antData[0] = b0;
-    antData[1] = b1;
-    antData[2] = b2;
-    antData[3] = b3;
-}
-
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
-        uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4)
-    : AntMessage() {
-    antType = type;
-    antChannel = chan;
-    antDataLen = 5;
-    antData[0] = b0;
-    antData[1] = b1;
-    antData[2] = b2;
-    antData[3] = b3;
-    antData[4] = b4;
-}
-
-int AntMessage::decode(uint8_t *data, int data_len) {
-    if (data_len < 5) {
-        DEBUG_COMMENT("Data too short (< 5)\n");
-        return ANT_DECODE_LEN_ERROR;
-    }
-
-    if (data[0] != ANT_SYNC_BYTE) {
-        DEBUG_COMMENT("First byte does not match SYNC\n");
-        return ANT_DECODE_PROTO_ERROR;
-    }
-
-    if (data[1] != (data_len - 4)) {
-        DEBUG_COMMENT("Data length does not match length in payload.");
-        return ANT_DECODE_LEN_ERROR;
-    }
-
-    // Check CRC
-
-    uint8_t crc = 0;
-    for (int i=0; i < (data_len-1); i++) {
-        crc ^= data[i];
-    }
-    if (data[3+data[1]] != crc) {
-        DEBUG_COMMENT("CRC MISMACH\n");
-        return ANT_DECODE_CRC_ERROR;
-    }
-
-    // Now create the message structure
-    // We have a copy but its probably safer ....
-
-    antDataLen = data[1] - 1;
-    antType = data[2];
-    antChannel = data[3];
-
-    for (int i=0; i < antDataLen; i++) {
-        antData[i] = data[4+i];
-    }
-
-    return ANT_DECODE_OK;
-}
-
-void AntMessage::encode(uint8_t *msg, int *len) {
-    msg[0] = ANT_SYNC_BYTE;
-    msg[1] = antDataLen + 1;
-    msg[2] = antType;
-    msg[3] = antChannel;
-
-    for (int i=0; i < antDataLen; i++) {
-        msg[i+4] = antData[i];
-    }
-
-    uint8_t crc = 0;
-    for (int i=0; i < (antDataLen+4); i++) {
-        crc ^= msg[i];
-    }
-
-    msg[antDataLen+4] = crc;
-
-    *len = antDataLen + 5;
-
-#ifdef DEBUG_OUTPUT
-    char bytes[100];
-    bytestream_to_string(bytes, sizeof(bytes), msg, *len);
-    DEBUG_PRINT("ANT Message : %s\n",  bytes);
-#endif
-}
 
 AntUsb::AntUsb(void) {
     usb_ctx = NULL;
@@ -209,10 +42,17 @@ AntUsb::AntUsb(void) {
     writeEndpoint = -1;
     writeTimeout = 500;
     readTimeout = 256;
+    numChannels = 8;
+
+    antChannel = new AntChannel[numChannels];
+    for (int i=0; i < numChannels; i++) {
+        antChannel[i].setChannel(i + 1);
+    }
 }
 
 AntUsb::~AntUsb(void) {
     libusb_free_config_descriptor(usb_config);
+    delete [] antChannel;
 }
 
 int AntUsb::init(void) {
@@ -438,10 +278,12 @@ int AntUsb::sendMessage(AntMessage *message, bool readReply) {
 }
 
 int AntUsb::readMessage(AntMessage *message) {
-    uint8_t bytes[ANT_MAX_MESSAGE_SIZE];
+    // uint8_t bytes[ANT_MAX_MESSAGE_SIZE];
+    uint8_t bytes[256];
     int nbytes = bulkRead(bytes, ANT_MAX_MESSAGE_SIZE, readTimeout);
     if (nbytes > 0) {
-        DEBUG_PRINT("nbytes = %d\n", nbytes);
+        DEBUG_PRINT("Recieved %d bytes.\n", nbytes);
+        message->setTimestamp();
         message->decode(bytes, nbytes);
     }
 
@@ -462,25 +304,22 @@ int AntUsb::reset(void) {
     return 0;
 }
 
-int AntUsb::setNetworkKey(void) {
+int AntUsb::setNetworkKey(uint8_t net) {
     uint8_t key[] = ANT_NETWORK_KEY;
 
     DEBUG_COMMENT("Sending ANT_SET_NETWORK\n");
-    AntMessage netkey(ANT_SET_NETWORK, 0, key, ANT_NETWORK_KEY_LEN);
+    AntMessage netkey(ANT_SET_NETWORK, net, key, ANT_NETWORK_KEY_LEN);
     return sendMessage(&netkey);
 }
 
-int AntUsb::assignChannel(int chanNum, bool master) {
-    int rc;
-
+int AntUsb::assignChannel(uint8_t chanNum, bool master, uint8_t net) {
     DEBUG_COMMENT("Sending ANT_UNASSIGN_CHANNEL\n");
     AntMessage unassign(ANT_UNASSIGN_CHANNEL, chanNum);
     sendMessage(&unassign);
 
     DEBUG_COMMENT("Sending ANT_ASSIGN_CHANNEL\n");
     AntMessage assign(ANT_ASSIGN_CHANNEL, (unsigned int)chanNum,
-            master ? CHANNEL_TYPE_TX : CHANNEL_TYPE_RX,
-            1);  // receive channel on network 1
+            master ? CHANNEL_TYPE_TX : CHANNEL_TYPE_RX, net);
     return sendMessage(&assign);
 }
 
@@ -510,22 +349,26 @@ int AntUsb::setSearchTimeout(uint8_t chan, uint8_t timeout) {
 }
 
 int AntUsb::setChannelPeriod(uint8_t chan, uint16_t period) {
+    DEBUG_COMMENT("Sending ANT_CHANNEL_PERIOD\n");
     AntMessage chanPeriod(ANT_CHANNEL_PERIOD, chan,
             period & 0xFF, (period >> 8) & 0xFF);
     return sendMessage(&chanPeriod);
 }
 
 int AntUsb::setChannelFreq(uint8_t chan, uint8_t frequency) {
+    DEBUG_COMMENT("Sending ANT_CHANNEL_FREQUENCY\n");
     AntMessage chanFreq(ANT_CHANNEL_FREQUENCY, chan, frequency);
     return sendMessage(&chanFreq);
 }
 
 int AntUsb::openChannel(uint8_t chan) {
+    DEBUG_COMMENT("Sending ANT_OPEN_CHANNEL\n");
     AntMessage open(ANT_OPEN_CHANNEL, chan);
     return sendMessage(&open);
 }
 
 int AntUsb::requestMessage(uint8_t chan, uint8_t message) {
+    DEBUG_PRINT("Sending ANT_REQ_MESSAGE 0x%02X\n", message);
     AntMessage req(ANT_REQ_MESSAGE, chan, message);
     return sendMessage(&req);
 }
@@ -537,59 +380,47 @@ int AntUsb::startListener(void) {
     return NOERROR;
 }
 
-static void* antusb_listener(void *ctx) {
+void* antusb_listener(void *ctx) {
     AntUsb *antusb = (AntUsb*) ctx;
     uint16_t counter = 0;
-    AntDeviceFEC fec;
-    AntDevicePower power;
-    AntDeviceHeartrate hr;
 
-    DEBUG_COMMENT("Started Listener Loop ....\n");
+    AntDeviceFEC fec;
+    AntDevicePWR power;
+    AntDeviceHR hr;
 
     // Recieve Loop
 
-    AntMessage r;
+    DEBUG_COMMENT("Started Listener Loop ....\n");
     for (;;) {
+        AntMessage r;
         if (antusb->readMessage(&r) > 0) {
             switch (r.getType()) {
                 case ANT_NOTIF_STARTUP:
                     DEBUG_COMMENT("RESET OK\n");
                     break;
-                // case ANT_ACK_DATA:
-                // case ANT_CHANNEL_STATUS:
-                // case ANT_CHANNEL_ID:
-                // case ANT_BURST_DATA:
-                //     parseChannelEvent();
-                //     break;
                 case ANT_CHANNEL_EVENT:
-                    switch (r.getData()[ANT_OFFSET_MESSAGE_CODE]) {
-                        case EVENT_TRANSFER_TX_FAILED:
-                            DEBUG_COMMENT("Transfer FAILED\n");
-                            break;
-                    }
+                    antusb->channelProcessEvent(&r);
+                    break;
+                case ANT_CHANNEL_ID:
+                    antusb->channelProcessID(&r);
                     break;
                 case ANT_BROADCAST_DATA:
-                    DEBUG_COMMENT("ANT_BROADCAST_DATA\n");
-                    if (r.getData()[0] == 1) {
-                        fec.parseMessage(&r);
-                    }
-                    if (r.getData()[0] == 2) {
-                        power.parseMessage(&r);
-                    }
-                    if (r.getData()[0] == 3) {
-                        hr.parseMessage(&r);
-                    }
+                    antusb->channelProcessBroadcast(&r);
                     break;
                 default:
                     DEBUG_COMMENT("Unknown ANT Type\n");
                     break;
             }
         }
-        if (!(counter % 100)) {
-            antusb->requestMessage(2, ANT_CHANNEL_ID);
-        }
-        if (!(counter % 57)) {
-            antusb->requestMessage(1, ANT_CHANNEL_ID);
+
+        if (!(counter % 20)) {
+            for (int i = 1; i <= antusb->getNumChannels(); i++) {
+                if (antusb->getChannel(i)->getState() ==
+                        AntChannel::STATE_OPEN_UNPAIRED) {
+                    DEBUG_PRINT("Requesting Channel ID on channel %d\n", i);
+                    antusb->requestMessage(i, ANT_CHANNEL_ID);
+                }
+            }
         }
         counter++;
     }
@@ -597,32 +428,147 @@ static void* antusb_listener(void *ctx) {
     return NULL;
 }
 
-// int AntMessage::parseChannelEvent(void) {
-//     int rtn = -1;
-//     int channel = antData[ANT_OFFSET_DATA];
-//     int code = antData[ANT_OFFSET_MESSAGE_CODE];
-//
-//     DEBUG_PRINT("Channel Event on channel 0x%02X with code 0x%02X\n",
-//             channel, code);
-//
-//     switch (code) {
-//         case RESPONSE_NO_ERROR:
-//             rtn = 0;
-//             DEBUG_COMMENT("RESPONSE_NO_ERROR\n");
-//             break;
-//         case ANT_CHANNEL_EVENT:
-//             rtn = 0;
-//             DEBUG_COMMENT("ANT_CHANNEL_EVENT\n");
-//             break;
-//         case ANT_ACK_DATA:
-//             rtn = 0;
-//             DEBUG_COMMENT("ANT_ACK_DATA\n");
-//             break;
-//         default:
-//             DEBUG_COMMENT("Unknown Channel Event Code\n");
-//             break;
-//     }
-//
-//     return rtn;
-// }
-//
+int AntUsb::channelChangeStateTo(uint8_t chan, int state) {
+    switch (state) {
+        case AntChannel::STATE_ASSIGNED:
+            // TODO(swilkins) check why zero
+            assignChannel(chan,
+                    getChannel(chan)->getMaster(),
+                    getChannel(chan)->getNetwork());
+            break;
+        case AntChannel::STATE_ID_SET:
+            // TODO(swilkins) check why zero
+            setChannelID(chan,
+                    getChannel(chan)->getDeviceId(),
+                    getChannel(chan)->getDeviceType(), 0);
+            break;
+        case AntChannel::STATE_SET_TIMEOUT:
+            setSearchTimeout(chan,
+                    getChannel(chan)->getSearchTimeout());
+            break;
+        case AntChannel::STATE_SET_PERIOD:
+            setChannelPeriod(chan,
+                    getChannel(chan)->getDevicePeriod());
+            break;
+        case AntChannel::STATE_SET_FREQ:
+            setChannelFreq(chan,
+                    getChannel(chan)->getDeviceFrequency());
+            break;
+        case AntChannel::STATE_OPEN_UNPAIRED:
+            openChannel(chan);
+            break;
+        default:
+            DEBUG_PRINT("Unknown State %d\n", state);
+            break;
+    }
+    return NOERROR;
+}
+
+int AntUsb::channelStart(uint8_t chan) {
+    // Start a channel config
+    // Claim the channel.
+
+    if (getChannel(chan)->getState() !=
+            AntChannel::STATE_IDLE) {
+        DEBUG_PRINT("Cannot start channel when not IDLE"
+        "(current state = %d)\n",
+                getChannel(chan)->getState());
+        return ERROR;
+    }
+
+    // Ok the next level is ASSIGNED
+
+    channelChangeStateTo(chan, AntChannel::STATE_ASSIGNED);
+
+    return NOERROR;
+}
+
+int AntUsb::channelProcessID(AntMessage *m) {
+    // Parse the ID
+    uint16_t id;
+    uint8_t type;
+    uint8_t chan = m->getChannel();
+    id  = (m->getData(0) << 8);
+    id |= m->getData(1);
+    type = m->getData(2);
+
+    DEBUG_PRINT("Processed Device ID 0x%04X type 0x%02X\n",
+            id, type);
+
+    getChannel(chan)->addDeviceId(id);
+
+    return NOERROR;
+}
+
+int AntUsb::channelProcessEvent(AntMessage *m) {
+    // 2nd Byte is event code
+    uint8_t chan = m->getChannel();
+    uint8_t commandCode = m->getData(0);
+    uint8_t responseCode = m->getData(1);
+
+    DEBUG_PRINT("Channel response (chan = %d"
+            " type = 0x%02X code = 0x%02X response ="
+            " 0x%02X)\n", m->getChannel(), m->getType(),
+            commandCode, responseCode);
+
+    switch (responseCode) {
+        case RESPONSE_NO_ERROR:
+            switch (commandCode) {
+                case ANT_ASSIGN_CHANNEL:
+                    getChannel(chan)->setState(AntChannel::STATE_ASSIGNED);
+                    channelChangeStateTo(chan, AntChannel::STATE_ID_SET);
+                    break;
+                case ANT_CHANNEL_ID:
+                    getChannel(chan)->setState(AntChannel::STATE_ID_SET);
+                    channelChangeStateTo(chan, AntChannel::STATE_SET_TIMEOUT);
+                    break;
+                case ANT_LP_SEARCH_TIMEOUT:
+                    getChannel(chan)->setState(
+                            AntChannel::STATE_SET_TIMEOUT);
+                    channelChangeStateTo(chan, AntChannel::STATE_SET_PERIOD);
+                    break;
+                case ANT_CHANNEL_PERIOD:
+                    getChannel(chan)->setState(AntChannel::STATE_SET_PERIOD);
+                    channelChangeStateTo(chan, AntChannel::STATE_SET_FREQ);
+                    break;
+                case ANT_CHANNEL_FREQUENCY:
+                    getChannel(chan)->setState(AntChannel::STATE_SET_FREQ);
+                    channelChangeStateTo(chan,
+                            AntChannel::STATE_OPEN_UNPAIRED);
+                    break;
+                case ANT_OPEN_CHANNEL:
+                    // Do nothing, but set state
+                    getChannel(chan)->setState(
+                            AntChannel::STATE_OPEN_UNPAIRED);
+                    break;
+            }
+            break;
+        case EVENT_RX_SEARCH_TIMEOUT:
+            DEBUG_PRINT("Search timeout on channel %d\n", chan);
+            getChannel(chan)->setState(AntChannel::STATE_OPEN_UNPAIRED);
+            break;
+        case EVENT_CHANNEL_CLOSED:
+            getChannel(chan)->setState(AntChannel::STATE_CLOSED);
+            channelChangeStateTo(chan, AntChannel::STATE_OPEN_UNPAIRED);
+            break;
+    }
+    return NOERROR;
+}
+
+int AntUsb::channelProcessBroadcast(AntMessage *m) {
+    // Parse the ID
+    uint8_t chan = m->getChannel();
+    switch (getChannel(chan)->getType()) {
+        case AntChannel::TYPE_HR:
+            getChannel(chan)->getDeviceHR()->parseMessage(m);
+            break;
+        case AntChannel::TYPE_PWR:
+            getChannel(chan)->getDevicePWR()->parseMessage(m);
+            break;
+        case AntChannel::TYPE_FEC:
+            getChannel(chan)->getDeviceFEC()->parseMessage(m);
+            break;
+    }
+
+    return NOERROR;
+}

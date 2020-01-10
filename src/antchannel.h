@@ -27,20 +27,72 @@
 #ifndef SRC_ANTCHANNEL_H_
 #define SRC_ANTCHANNEL_H_
 
+#include <set>
+#include "antdevice.h"
 
 class AntChannel {
  public:
     enum {
-        NOERROR = 0,
-        ERROR = -1
+        // The return values
+        NOERROR     = 0,
+        ERROR       = -1,
+        ERROR_STATE = 1
     };
-    AntChannel(AntUsb *ant, int channel);
-    int start(void);
+    enum {
+        // The channel types
+        TYPE_NONE = 0,
+        TYPE_HR   = 1,
+        TYPE_PWR  = 2,
+        TYPE_FEC  = 3
+    };
+    enum {
+        // The state machine to define
+        // the various states for an ANT+ channel
+        STATE_IDLE          = 0,
+        STATE_ASSIGNED      = 1,
+        STATE_ID_SET        = 2,
+        STATE_SET_TIMEOUT   = 3,
+        STATE_SET_PERIOD    = 4,
+        STATE_SET_FREQ      = 5,
+        STATE_OPEN_UNPAIRED = 6,
+        STATE_OPEN_PAIRED   = 7,
+        STATE_CLOSED        = 8
+    };
+
+    AntChannel(void);
+    void       setChannel(uint8_t chan) { chanNum = chan; }
+    uint8_t    getChannel(void)         { return chanNum; }
+    uint8_t    getNetwork(void)         { return network; }
+    bool       getMaster(void)          { return master; }
+    uint8_t    getDeviceType(void)      { return deviceType; }
+    uint16_t   getDeviceId(void)        { return deviceId; }
+    uint16_t   getDevicePeriod(void)    { return devicePeriod; }
+    uint16_t   getDeviceFrequency(void) { return deviceFrequency; }
+    uint16_t   getSearchTimeout(void)   { return searchTimeout; }
+    int        getType(void)            { return type; }
+    int        getState(void)           { return currentState; }
+    void       setState(int state);
+    void       addDeviceId(uint16_t devid);
+
+    AntDeviceFEC* getDeviceFEC(void)    { return deviceFEC; }
+    AntDeviceHR*  getDeviceHR(void)     { return deviceHR; }
+    AntDevicePWR* getDevicePWR(void)    { return devicePWR; }
 
  private:
-    int chanNum;
-    AntUsb* antusb;
+    uint8_t  chanNum;
+    uint8_t  network;
+    uint8_t  master;
+    int      currentState;
+    uint8_t  deviceType;
+    uint16_t deviceId;
+    uint16_t devicePeriod;
+    uint8_t  deviceFrequency;
+    uint8_t  searchTimeout;
+    std::set<uint16_t> deviceIdSet;
+    int          type;
+    AntDeviceFEC *deviceFEC;
+    AntDeviceHR  *deviceHR;
+    AntDevicePWR *devicePWR;
 };
-
 
 #endif  // SRC_ANTCHANNEL_H_

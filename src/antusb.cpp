@@ -30,6 +30,8 @@
 #include "debug.h"
 #include "ant.h"
 #include "antusb.h"
+#include "antchannel.h"
+#include "antdevice.h"
 
 int main(int argc, char *argv[]) {
     AntUsb antusb;
@@ -39,30 +41,11 @@ int main(int argc, char *argv[]) {
 
     antusb.reset();
 
-    antusb.setNetworkKey();
-    antusb.assignChannel(1, 0);
-    antusb.setChannelID(1, 0, 0x11, 0);
-    antusb.setSearchTimeout(1, 12);
-    antusb.setChannelPeriod(1, 8192);
-    antusb.setChannelFreq(1, 57);
-
-    antusb.assignChannel(2, 0);
-    antusb.setChannelID(2, 54317, 0x0B, 0);
-    antusb.setSearchTimeout(2, 12);
-    antusb.setChannelPeriod(2, 8182);
-    antusb.setChannelFreq(2, 57);
-
-    antusb.assignChannel(3, 0);
-    antusb.setChannelID(3, 0, 0x78, 0);
-    antusb.setSearchTimeout(3, 12);
-    antusb.setChannelPeriod(3, 8070);
-    antusb.setChannelFreq(3, 57);
-
-    antusb.openChannel(1);
-    antusb.openChannel(2);
-    antusb.openChannel(3);
-
     antusb.startListener();
+
+    antusb.setNetworkKey(0);
+
+    antusb.channelStart(1);
 
     for (;;) { }
 

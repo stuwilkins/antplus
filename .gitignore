@@ -1,6 +1,8 @@
 # For VIM
 
 *.swp
+*.swo
+*.swn
 
 # Dont publish the ANT KEY!
 

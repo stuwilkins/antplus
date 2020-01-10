@@ -28,60 +28,64 @@
 #include "antdevice.h"
 #include "debug.h"
 
-AntDeviceFEC::AntDeviceFEC(void) {
-    cycleLength = 0;
-    incline = 0;
-    resistance = 0;
-    cadence = 0;
-    accPower = 0;
-    instPower = 0;
-    instSpeed = 0;
+AntDevice::AntDevice(int nMeas) {
+    // Create the list of values
+    data = new std::list<AntDeviceDatum>[nMeas];
 }
 
-AntDeviceFEC::AntDeviceFEC(AntMessage *message)
-    : AntDeviceFEC() {
-    parseMessage(message);
+AntDevice::~AntDevice(void) {
+    delete [] data;
+}
+
+void AntDevice::addDatum(int i, AntDeviceDatum val) {
+    data[i].push_back(val);
+}
+
+AntDeviceFEC::AntDeviceFEC(void)
+     : AntDevice(7) {
 }
 
 void AntDeviceFEC::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
+    time_point<Clock> ts = message->getTimestamp();
 
     if (dataLen != 9) {
         DEBUG_COMMENT("Invalid FEC Message\n");
         return;
     }
 
-    switch (data[0]) {
-        case ANT_DEVICE_FEC_GENERAL:
-            instSpeed = data[4];
+    if (data[0] == ANT_DEVICE_FEC_GENERAL) {
+            uint16_t instSpeed = data[4];
             instSpeed |= (data[5] << 8);
-            DEBUG_PRINT("FE-C General Data, %d\n", instSpeed);
-            break;
-        case ANT_DEVICE_FEC_GENERAL_SETTINGS:
-            cycleLength = data[3];
-            incline = data[4];
+            addDatum(INST_SPEED, AntDeviceDatum(instSpeed, ts));
+    } else if (data[0] == ANT_DEVICE_FEC_GENERAL_SETTINGS) {
+            uint8_t cycleLength = data[3];
+            uint8_t resistance = data[6];
+            uint16_t incline = data[4];
             incline |= (data[5] << 8);
-            resistance = data[6];
-            DEBUG_PRINT("FE-C Settings, %d, %d, %d\n", cycleLength,
-                    incline, resistance);
-            break;
-        case ANT_DEVICE_FEC_TRAINER:
-            cadence = data[2];
-            accPower = data[3];
+            addDatum(CYCLE_LENGTH, AntDeviceDatum(cycleLength, ts));
+            addDatum(RESISTANCE, AntDeviceDatum(resistance, ts));
+            addDatum(INCLINE, AntDeviceDatum(incline, ts));
+            DEBUG_PRINT("FE-C General Data, %d, %d, %d\n",
+                    cycleLength, resistance, incline);
+    } else if (data[0] == ANT_DEVICE_FEC_TRAINER) {
+            uint8_t cadence = data[2];
+            uint16_t accPower = data[3];
             accPower |= (data[4] << 8);
-            instPower = data[5];
+            uint16_t instPower = data[5];
             instPower |= (data[6] << 8);
+            addDatum(CADENCE, AntDeviceDatum(cadence, ts));
+            addDatum(ACC_POWER, AntDeviceDatum(accPower, ts));
+            addDatum(INST_POWER, AntDeviceDatum(instPower, ts));
             DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d\n", cadence, accPower,
                     instPower);
-            break;
-        default:
-            DEBUG_PRINT("Unknown FEC Page 0x%02X\n", data[0]);
-            break;
+    } else {
+        DEBUG_PRINT("Unknown FEC Page 0x%02X\n", data[0]);
     }
 }
 
-AntDevicePower::AntDevicePower(void) {
+AntDevicePWR::AntDevicePWR(void) {
     instPower = 0;
     accPower = 0;
     cadence = 0;
@@ -99,7 +103,7 @@ AntDevicePower::AntDevicePower(void) {
     peakTorqueThresh = 0;
 }
 
-void AntDevicePower::parseMessage(AntMessage *message) {
+void AntDevicePWR::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
 
@@ -165,21 +169,22 @@ void AntDevicePower::parseMessage(AntMessage *message) {
     }
 }
 
-AntDeviceHeartrate::AntDeviceHeartrate(void) {
+AntDeviceHR::AntDeviceHR(void)
+     : AntDevice(2) {
     hbEventTime = 0;
     previousHbEventTime = 0;
     hbCount = 0;
-    heartRate = 0;
     toggled = false;
     lastToggleBit = 0xFF;
 }
 
-void AntDeviceHeartrate::parseMessage(AntMessage *message) {
+void AntDeviceHR::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
+    time_point<Clock> ts = message->getTimestamp();
 
-    if (dataLen != 9) {
-        DEBUG_COMMENT("Invalid Power Message\n");
+    if (dataLen != 8) {
+        DEBUG_COMMENT("Invalid HR Message\n");
         return;
     }
 
@@ -188,7 +193,7 @@ void AntDeviceHeartrate::parseMessage(AntMessage *message) {
     hbEventTime = data[4];
     hbEventTime |= (data[5] << 8);
     hbCount = data[6];
-    heartRate = data[7];
+    uint8_t heartRate = data[7];
 
     uint8_t toggleBit = (data[0] & 0x80);
 
@@ -201,17 +206,16 @@ void AntDeviceHeartrate::parseMessage(AntMessage *message) {
 
     lastToggleBit = toggleBit;
 
-    switch (data[0] & 0x7F) {
-        case ANT_DEVICE_HR_PREVIOUS:
-            previousHbEventTime = data[2];
-            previousHbEventTime |= (data[3] << 8);
-            rrInterval = hbEventTime - previousHbEventTime;
-            DEBUG_PRINT("HR Previous, %d, %d, %d\n", previousHbEventTime,
-                    hbEventTime, rrInterval);
-            break;
-        default:
-            DEBUG_PRINT("Unkown HR Page 0x%02X\n", data[0] & 0x7F);
-            break;
+    addDatum(HEARTRATE, AntDeviceDatum(heartRate, ts));
+
+    if ((data[0] & 0x7F)  == ANT_DEVICE_HR_PREVIOUS) {
+        previousHbEventTime = data[2];
+        previousHbEventTime |= (data[3] << 8);
+        float rrInterval = (hbEventTime - previousHbEventTime);
+        rrInterval *= (1000 / 1024);
+        addDatum(RR_INTERVAL, AntDeviceDatum(rrInterval, ts));
+        DEBUG_PRINT("HR Previous, %d, %d, %f\n", previousHbEventTime,
+                hbEventTime, rrInterval);
     }
 }
 

@@ -40,28 +40,74 @@
 
 #define ANT_DEVICE_HR_PREVIOUS              0x04
 
-#include "ant.h"
+using std::chrono::duration_cast;
+using std::chrono::milliseconds;
 
-class AntDeviceFEC {
+#include <list>
+#include <chrono>
+
+using Clock = std::chrono::steady_clock;
+using std::chrono::time_point;
+
+class AntDeviceDatum {
  public:
-    AntDeviceFEC(void);
-    explicit AntDeviceFEC(AntMessage *message);
-    void parseMessage(AntMessage *message);
-
+    AntDeviceDatum(float v,
+            time_point<Clock> t) {
+        val = v;
+        ts = t;
+    }
  private:
-    int cycleLength;            // cm
-    int16_t incline;            // 0.01%
-    uint8_t resistance;         // 0.5%
-    uint8_t cadence;            // RPM
-    uint16_t accPower;          // W
-    uint16_t instPower;         // W
-    uint16_t instSpeed;         // 0.001 m.s^-1
+    float val;
+    time_point<Clock> ts;
 };
 
-class AntDevicePower {
+class AntDevice {
  public:
-     AntDevicePower(void);
+    explicit AntDevice(int nMeas);
+    ~AntDevice(void);
+    void addDatum(int i, AntDeviceDatum val);
+    void parseMessage(AntMessage *message);
+ private:
+    std::list<AntDeviceDatum> *data;
+};
+
+class AntDeviceFEC : public AntDevice {
+ public:
+    enum {
+        INCLINE      = 0,
+        RESISTANCE   = 1,
+        CADENCE      = 2,
+        ACC_POWER    = 3,
+        INST_POWER   = 4,
+        INST_SPEED   = 5,
+        CYCLE_LENGTH = 6
+    };
+    AntDeviceFEC(void);
      void parseMessage(AntMessage *message);
+};
+
+class AntDevicePWR {
+ public:
+    enum {
+        BALLANCE              = 0,
+        CADENCE               = 1,
+        ACC_POWER             = 2,
+        INST_POWER            = 3,
+        LEFT_TE               = 4,
+        RIGHT_TE              = 5,
+        LEFT_PS               = 6,
+        RIGHT_PS              = 7,
+        N_BATTERIES           = 8,
+        OPERATING_TIME        = 9,
+        BATTERY_VOLTAGE       = 10,
+        CRANK_LENGTH          = 11,
+        CRANK_STATUS          = 12,
+        SENSOR_STATUS         = 13,
+        PEAK_TORQUE_THRESHOLD = 14
+    };
+    AntDevicePWR(void);
+    void parseMessage(AntMessage *message);
+
  private:
     uint8_t balance;           // %
     uint8_t cadence;           // RPM
@@ -81,17 +127,19 @@ class AntDevicePower {
     uint8_t peakTorqueThresh;  // 0.5%
 };
 
-class AntDeviceHeartrate {
+class AntDeviceHR : public AntDevice {
  public:
-    AntDeviceHeartrate(void);
+    enum {
+        HEARTRATE = 0,
+        RR_INTERVAL = 1,
+    };
+    AntDeviceHR(void);
     void parseMessage(AntMessage *message);
 
  private:
     uint16_t hbEventTime;
     uint16_t previousHbEventTime;
     uint8_t hbCount;
-    uint8_t heartRate;
-    uint16_t rrInterval;
     bool toggled;
     uint8_t lastToggleBit;
 };

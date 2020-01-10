@@ -27,7 +27,11 @@
 #ifndef SRC_DEBUG_H_
 #define SRC_DEBUG_H_
 
+#include <stdint.h>
 #include <cstdio>
+
+void bytestream_to_string(char *out, int n_out,
+        uint8_t *bytes, int n_bytes);
 
 #ifndef __FILENAME__
 #define __FILENAME__ __FILE__

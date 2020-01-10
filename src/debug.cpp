@@ -24,37 +24,21 @@
 // SOFTWARE.
 //
 
-
-#include "ant.h"
-#include "antchannel.h"
+#include <stdio.h>
 #include "debug.h"
 
-AntChannel::AntChannel(void) {
-    chanNum = 1;
+void bytestream_to_string(char *out, int n_out, uint8_t *bytes, int n_bytes) {
+    if (n_bytes == 0) {
+        out[0] = 0;
+        return;
+    }
 
-    master = false;
-    network = 0x00;
-    deviceType = 0x78;
-    deviceId = 0x00;
-    devicePeriod = 8070;
-    deviceFrequency = 0x39;
-    searchTimeout = 12;
+    char *_dbmsg = out;
 
-    // The state of this channel
-    currentState = STATE_IDLE;
-
-    type      = TYPE_HR;
-    deviceFEC = new AntDeviceFEC;
-    deviceHR  = new AntDeviceHR;
-    devicePWR = new AntDevicePWR;
+    for (int i=0; i < n_bytes; i++) {
+        snprintf(_dbmsg, n_out - (3 * i), "%02X:", bytes[i]);
+        _dbmsg += 3;
+    }
+    *(_dbmsg-1) = 0;
 }
 
-void AntChannel::setState(int state) {
-    DEBUG_PRINT("Channel %d state changed to %d\n",
-        chanNum, state);
-    currentState = state;
-}
-
-void AntChannel::addDeviceId(uint16_t devid) {
-    deviceIdSet.insert(devid);
-}
