@@ -48,6 +48,8 @@ AntUsb::AntUsb(void) {
     for (int i=0; i < numChannels; i++) {
         antChannel[i].setChannel(i + 1);
     }
+
+    antChannel[0].setType(AntDevice::TYPE_HR);
 }
 
 AntUsb::~AntUsb(void) {
@@ -384,10 +386,6 @@ void* antusb_listener(void *ctx) {
     AntUsb *antusb = (AntUsb*) ctx;
     uint16_t counter = 0;
 
-    AntDeviceFEC fec;
-    AntDevicePWR power;
-    AntDeviceHR hr;
-
     // Recieve Loop
 
     DEBUG_COMMENT("Started Listener Loop ....\n");
@@ -559,13 +557,13 @@ int AntUsb::channelProcessBroadcast(AntMessage *m) {
     // Parse the ID
     uint8_t chan = m->getChannel();
     switch (getChannel(chan)->getType()) {
-        case AntChannel::TYPE_HR:
+        case AntDevice::TYPE_HR:
             getChannel(chan)->getDeviceHR()->parseMessage(m);
             break;
-        case AntChannel::TYPE_PWR:
+        case AntDevice::TYPE_PWR:
             getChannel(chan)->getDevicePWR()->parseMessage(m);
             break;
-        case AntChannel::TYPE_FEC:
+        case AntDevice::TYPE_FEC:
             getChannel(chan)->getDeviceFEC()->parseMessage(m);
             break;
     }

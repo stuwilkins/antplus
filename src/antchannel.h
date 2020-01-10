@@ -39,13 +39,6 @@ class AntChannel {
         ERROR_STATE = 1
     };
     enum {
-        // The channel types
-        TYPE_NONE = 0,
-        TYPE_HR   = 1,
-        TYPE_PWR  = 2,
-        TYPE_FEC  = 3
-    };
-    enum {
         // The state machine to define
         // the various states for an ANT+ channel
         STATE_IDLE          = 0,
@@ -60,6 +53,9 @@ class AntChannel {
     };
 
     AntChannel(void);
+    AntChannel(uint8_t chan, int type);
+    void setType(int type);
+
     void       setChannel(uint8_t chan) { chanNum = chan; }
     uint8_t    getChannel(void)         { return chanNum; }
     uint8_t    getNetwork(void)         { return network; }

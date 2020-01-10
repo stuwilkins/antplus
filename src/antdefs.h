@@ -119,4 +119,6 @@
 
 #define ANT_DEVICE_HR_PREVIOUS              0x04
 
+// DataStruct for device type parameters
+
 #endif  // SRC_ANTDEFS_H_

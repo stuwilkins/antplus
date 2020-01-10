@@ -27,6 +27,4 @@
 #ifndef SRC_ANTUSB_H_
 #define SRC_ANTUSB_H_
 
-void* antusb_listener(void *ctx);
-
 #endif  // SRC_ANTUSB_H_

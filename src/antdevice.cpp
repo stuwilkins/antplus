@@ -28,6 +28,13 @@
 #include "antdevice.h"
 #include "debug.h"
 
+AntDeviceParams AntDevice::params[] = {
+    {  AntDevice::TYPE_HR,   0x78, 0x1F86, 0x39 },
+    {  AntDevice::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
+    {  AntDevice::TYPE_FEC,  0x11, 0x2000, 0x39 },
+    {  AntDevice::TYPE_NONE, 0x11, 0x0000, 0x39 }
+};
+
 AntDevice::AntDevice(int nMeas) {
     // Create the list of values
     data = new std::list<AntDeviceDatum>[nMeas];
@@ -85,87 +92,85 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
     }
 }
 
-AntDevicePWR::AntDevicePWR(void) {
-    instPower = 0;
-    accPower = 0;
-    cadence = 0;
-    balance = 0;
-    leftTE = 0;
-    rightTE = 0;
-    leftPS = 0;
-    rightPS = 0;
-    nBatteries = 0;
-    operatingTime = 0;
-    batteryVoltage = 0;
-    crankLength = 0;
-    crankStatus = 0;
-    sensorStatus = 0;
-    peakTorqueThresh = 0;
+AntDevicePWR::AntDevicePWR(void)
+    : AntDevice(15) {
 }
 
 void AntDevicePWR::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
+    time_point<Clock> ts = message->getTimestamp();
 
-    if (dataLen != 9) {
+    if (dataLen != 8) {
         DEBUG_COMMENT("Invalid Power Message\n");
         return;
     }
 
-    switch (data[0]) {
-        case ANT_DEVICE_POWER_STANDARD:
-            if ((data[2] & 0x80) && (data[2] != 0xFF)) {
-                // We have balance data
-                balance = data[2] & 0x7F;
-            } else {
-                balance = 0xFF;
-            }
-            cadence = data[3];
-            accPower = data[4];
-            accPower |= (data[5] << 8);
-            instPower = data[6];
-            instPower |= (data[7] << 8);
-            DEBUG_PRINT("POWER Standard, %d, %d, %d, %d\n", balance, cadence,
-                    accPower, instPower);
-            break;
-        case ANT_DEVICE_POWER_TEPS:
-            leftTE = data[2];
-            rightTE = data[3];
-            leftPS = data[4];
-            rightPS = data[5];
-            DEBUG_PRINT("POWER TEPS, %d, %d, %d, %d\n", leftTE, rightTE,
-                    leftPS, rightPS);
-            break;
-        case ANT_DEVICE_POWER_BATTERY:
-            nBatteries = data[2] & 0x0F;
-            operatingTime = data[3];
-            operatingTime |= (data[4] << 8);
-            operatingTime |= (data[5] << 16);
-            batteryVoltage = data[6];
-            DEBUG_PRINT("POWER Battery, %d, %d, %d\n", nBatteries,
-                    operatingTime, batteryVoltage);
-            break;
-        case ANT_DEVICE_POWER_PARAMS:
-            switch (data[0]) {
-                case ANT_DEVICE_POWER_PARAMS_CRANK:
-                    crankLength = data[4];
-                    crankStatus = data[5] & 0x03;
-                    sensorStatus = (data[6] >> 3) & 0x01;
-                    DEBUG_PRINT("POWER Params Crank, %d, %d, %d\n",
-                            crankLength, crankStatus, sensorStatus);
-                    break;
-                case ANT_DEVICE_POWER_PARAMS_TORQUE:
-                    peakTorqueThresh = data[7];
-                    DEBUG_PRINT("POWER Params Torque, %d\n", peakTorqueThresh);
-                    break;
-                default:
-                    DEBUG_COMMENT("Unknown power Paramaters Page\n");
-                    break;
-            }
-            break;
-        default:
-            DEBUG_PRINT("Unknown Power Page 0x%02X\n", data[0]);
-            break;
+    if (data[0] == ANT_DEVICE_POWER_STANDARD) {
+        uint8_t balance = data[2];
+        if ((balance & 0x80) && (balance != 0xFF)) {
+            // We have balance data
+            balance = balance & 0x7F;
+            addDatum(BALANCE, AntDeviceDatum(balance, ts));
+        }
+        uint8_t cadence = data[3];
+        addDatum(CADENCE, AntDeviceDatum(cadence, ts));
+
+        uint16_t accPower = data[4];
+        accPower |= (data[5] << 8);
+        addDatum(ACC_POWER, AntDeviceDatum(accPower, ts));
+
+        uint16_t instPower = data[6];
+        instPower |= (data[7] << 8);
+        addDatum(INST_POWER, AntDeviceDatum(instPower, ts));
+
+        DEBUG_PRINT("POWER Standard, %d, %d, %d, %d\n", balance, cadence,
+                accPower, instPower);
+    } else if (data[0] == ANT_DEVICE_POWER_TEPS) {
+        uint8_t leftTE = data[2];
+        uint8_t rightTE = data[3];
+        uint8_t leftPS = data[4];
+        uint8_t rightPS = data[5];
+
+        addDatum(LEFT_TE, AntDeviceDatum(leftTE, ts));
+        addDatum(RIGHT_TE, AntDeviceDatum(rightTE, ts));
+        addDatum(LEFT_PS, AntDeviceDatum(leftPS, ts));
+        addDatum(RIGHT_PS, AntDeviceDatum(rightPS, ts));
+        DEBUG_PRINT("POWER TEPS, %d, %d, %d, %d\n", leftTE, rightTE,
+                leftPS, rightPS);
+    } else if (data[0] == ANT_DEVICE_POWER_BATTERY) {
+        uint8_t nBatteries = data[2] & 0x0F;
+        uint32_t operatingTime = data[3];
+        operatingTime |= (data[4] << 8);
+        operatingTime |= (data[5] << 16);
+        uint8_t batteryVoltage = data[6];
+
+        addDatum(N_BATTERIES, AntDeviceDatum(nBatteries, ts));
+        addDatum(OPERATING_TIME, AntDeviceDatum(operatingTime, ts));
+        addDatum(BATTERY_VOLTAGE, AntDeviceDatum(batteryVoltage, ts));
+
+        DEBUG_PRINT("POWER Battery, %d, %d, %d\n", nBatteries,
+                operatingTime, batteryVoltage);
+    } else if (data[0] == ANT_DEVICE_POWER_PARAMS) {
+        if (data[1] == ANT_DEVICE_POWER_PARAMS_CRANK) {
+            uint8_t crankLength = data[4];
+            uint8_t crankStatus = data[5] & 0x03;
+            uint8_t sensorStatus = (data[6] >> 3) & 0x01;
+            DEBUG_PRINT("POWER Params Crank, %d, %d, %d\n",
+                    crankLength, crankStatus, sensorStatus);
+            addDatum(CRANK_LENGTH, AntDeviceDatum(crankLength, ts));
+            addDatum(CRANK_STATUS, AntDeviceDatum(crankStatus, ts));
+            addDatum(SENSOR_STATUS, AntDeviceDatum(sensorStatus, ts));
+        } else if (data[1] == ANT_DEVICE_POWER_PARAMS_TORQUE) {
+            uint8_t peakTorqueThresh = data[7];
+            addDatum(PEAK_TORQUE_THRESHOLD,
+                    AntDeviceDatum(peakTorqueThresh, ts));
+            DEBUG_PRINT("POWER Params Torque, %d\n", peakTorqueThresh);
+        } else {
+            DEBUG_COMMENT("Unknown power Paramaters Page\n");
+        }
+    } else {
+        DEBUG_PRINT("Unknown Power Page 0x%02X\n", data[0]);
     }
 }
 

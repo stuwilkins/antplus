@@ -26,28 +26,48 @@
 
 
 #include "ant.h"
+#include "antdevice.h"
 #include "antchannel.h"
 #include "debug.h"
 
 AntChannel::AntChannel(void) {
     chanNum = 1;
-
     master = false;
     network = 0x00;
-    deviceType = 0x78;
+    deviceType = 0x00;
     deviceId = 0x00;
-    devicePeriod = 8070;
-    deviceFrequency = 0x39;
-    searchTimeout = 12;
+    devicePeriod = 0x00;
+    deviceFrequency = 0x00;
+    searchTimeout = 0x00;
 
     // The state of this channel
     currentState = STATE_IDLE;
 
-    type      = TYPE_HR;
+    type      = AntDevice::TYPE_HR;
     deviceFEC = new AntDeviceFEC;
     deviceHR  = new AntDeviceHR;
     devicePWR = new AntDevicePWR;
 }
+
+AntChannel::AntChannel(uint8_t chan, int type) {
+    setChannel(chan);
+    setType(type);
+}
+
+void AntChannel::setType(int type) {
+    type = type;
+
+    int i = 0;
+    while (AntDevice::params[i].type != AntDevice::TYPE_NONE) {
+        if (AntDevice::params[i].type == type) {
+            deviceType = AntDevice::params[i].deviceType;
+            devicePeriod = AntDevice::params[i].devicePeriod;
+            deviceFrequency = AntDevice::params[i].deviceFrequency;
+            break;
+        }
+    }
+}
+
 
 void AntChannel::setState(int state) {
     DEBUG_PRINT("Channel %d state changed to %d\n",

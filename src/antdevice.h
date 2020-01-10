@@ -49,6 +49,13 @@ using std::chrono::milliseconds;
 using Clock = std::chrono::steady_clock;
 using std::chrono::time_point;
 
+struct AntDeviceParams {
+    int type;
+    uint8_t deviceType;
+    uint16_t devicePeriod;
+    uint8_t deviceFrequency;
+};
+
 class AntDeviceDatum {
  public:
     AntDeviceDatum(float v,
@@ -63,6 +70,14 @@ class AntDeviceDatum {
 
 class AntDevice {
  public:
+    enum {
+        // The channel types
+        TYPE_NONE = 0,
+        TYPE_HR   = 1,
+        TYPE_PWR  = 2,
+        TYPE_FEC  = 3
+    };
+    static AntDeviceParams params[4];
     explicit AntDevice(int nMeas);
     ~AntDevice(void);
     void addDatum(int i, AntDeviceDatum val);
@@ -86,10 +101,10 @@ class AntDeviceFEC : public AntDevice {
      void parseMessage(AntMessage *message);
 };
 
-class AntDevicePWR {
+class AntDevicePWR : public AntDevice {
  public:
     enum {
-        BALLANCE              = 0,
+        BALANCE              = 0,
         CADENCE               = 1,
         ACC_POWER             = 2,
         INST_POWER            = 3,
@@ -109,22 +124,22 @@ class AntDevicePWR {
     void parseMessage(AntMessage *message);
 
  private:
-    uint8_t balance;           // %
-    uint8_t cadence;           // RPM
-    uint16_t accPower;         // W
-    uint16_t instPower;        // W
-    uint8_t leftTE;            // 0.5%
-    uint8_t rightTE;           // 0.5%
-    uint8_t leftPS;            // 0.5%
-    uint8_t rightPS;           // 0.5%
-    uint8_t nBatteries;
-    uint32_t operatingTime;    // 2s or 16s
-    uint8_t batteryVoltage;    // 1/256V
-    uint8_t crankLength;       // X*0.5 mm + 110.0 mm
-    uint8_t crankStatus;       // 00 Invalid, 01 Default
-                               // 10 Manually set, 11 Auto Set
-    uint8_t sensorStatus;      // SW Missmach != 0
-    uint8_t peakTorqueThresh;  // 0.5%
+    // uint8_t balance;           // %
+    // uint8_t cadence;           // RPM
+    // uint16_t accPower;         // W
+    // uint16_t instPower;        // W
+    // uint8_t leftTE;            // 0.5%
+    // uint8_t rightTE;           // 0.5%
+    // uint8_t leftPS;            // 0.5%
+    // uint8_t rightPS;           // 0.5%
+    // uint8_t nBatteries;
+    // uint32_t operatingTime;    // 2s or 16s
+    // uint8_t batteryVoltage;    // 1/256V
+    // uint8_t crankLength;       // X*0.5 mm + 110.0 mm
+    // uint8_t crankStatus;       // 00 Invalid, 01 Default
+    //                            // 10 Manually set, 11 Auto Set
+    // uint8_t sensorStatus;      // SW Missmach != 0
+    // uint8_t peakTorqueThresh;  // 0.5%
 };
 
 class AntDeviceHR : public AntDevice {

@@ -40,6 +40,8 @@
 #include "antchannel.h"
 #include "ant_network_key.h"
 
+void* antusb_listener(void *ctx);
+
 class AntUsb {
  public:
     enum rtn {
