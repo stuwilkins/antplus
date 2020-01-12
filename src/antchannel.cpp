@@ -31,31 +31,29 @@
 #include "debug.h"
 
 AntChannel::AntChannel(void) {
-    chanNum = 1;
+    chanNum = 0;
     master = false;
     network = 0x00;
     deviceType = 0x00;
     deviceId = 0x00;
     devicePeriod = 0x00;
     deviceFrequency = 0x00;
-    searchTimeout = 0x00;
+    searchTimeout = 0x05;
 
     // The state of this channel
     currentState = STATE_IDLE;
 
-    type      = AntDevice::TYPE_HR;
-    deviceFEC = new AntDeviceFEC;
-    deviceHR  = new AntDeviceHR;
-    devicePWR = new AntDevicePWR;
+    type      = AntDevice::TYPE_NONE;
 }
 
-AntChannel::AntChannel(uint8_t chan, int type) {
+AntChannel::AntChannel(uint8_t chan, int type)
+    : AntChannel() {
     setChannel(chan);
     setType(type);
 }
 
-void AntChannel::setType(int type) {
-    type = type;
+void AntChannel::setType(int t) {
+    type = t;
 
     int i = 0;
     while (AntDevice::params[i].type != AntDevice::TYPE_NONE) {
@@ -65,9 +63,12 @@ void AntChannel::setType(int type) {
             deviceFrequency = AntDevice::params[i].deviceFrequency;
             break;
         }
+        i++;
     }
-}
 
+    DEBUG_PRINT("Channel %d set to %d, %d, %d\n",
+        chanNum, deviceType, devicePeriod, deviceFrequency);
+}
 
 void AntChannel::setState(int state) {
     DEBUG_PRINT("Channel %d state changed to %d\n",
@@ -78,3 +79,20 @@ void AntChannel::setState(int state) {
 void AntChannel::addDeviceId(uint16_t devid) {
     deviceIdSet.insert(devid);
 }
+
+AntDevice* AntChannel::getDevice(void) {
+    switch (type) {
+        case AntDevice::TYPE_HR:
+            return &deviceHR;
+            break;
+        case AntDevice::TYPE_PWR:
+            return &devicePWR;
+            break;
+        case AntDevice::TYPE_FEC:
+            return &deviceFEC;
+            break;
+    }
+
+    return nullptr;
+}
+

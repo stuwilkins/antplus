@@ -32,32 +32,60 @@ AntDeviceParams AntDevice::params[] = {
     {  AntDevice::TYPE_HR,   0x78, 0x1F86, 0x39 },
     {  AntDevice::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
     {  AntDevice::TYPE_FEC,  0x11, 0x2000, 0x39 },
-    {  AntDevice::TYPE_NONE, 0x11, 0x0000, 0x39 }
+    {  AntDevice::TYPE_PAIR, 0x00, 0x0000, 0x39 },
+    {  AntDevice::TYPE_NONE, 0x00, 0x0000, 0x00 }
 };
 
-AntDevice::AntDevice(int nMeas) {
+AntDevice::AntDevice(void) {
+    deviceName = std::string("none");
+    data = nullptr;
+}
+
+AntDevice::AntDevice(int n)
+    : AntDevice() {
     // Create the list of values
-    data = new std::list<AntDeviceDatum>[nMeas];
+    nValues = n;
+    data = new std::vector<AntDeviceDatum>[nValues];
 }
 
 AntDevice::~AntDevice(void) {
-    delete [] data;
+    if (data != nullptr) {
+        delete [] data;
+    }
 }
 
 void AntDevice::addDatum(int i, AntDeviceDatum val) {
     data[i].push_back(val);
 }
 
+std::vector<AntDeviceDatum>& AntDevice::getData(int i) {
+    // TODO(swilkins) Bounds checking?
+    return data[i];
+}
+
+std::string AntDevice::getDeviceName(void) {
+    return deviceName;
+}
+
 AntDeviceFEC::AntDeviceFEC(void)
      : AntDevice(7) {
+    deviceName = std::string("FE-C");
+    valueNames.push_back("INCLINE");
+    valueNames.push_back("RESISTANCE");
+    valueNames.push_back("CADENCE");
+    valueNames.push_back("ACC_POWER");
+    valueNames.push_back("INST_POWER");
+    valueNames.push_back("INST_SPEED");
+    valueNames.push_back("CYCLE_LENGTH");
 }
+
 
 void AntDeviceFEC::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
 
-    if (dataLen != 9) {
+    if (dataLen != 8) {
         DEBUG_COMMENT("Invalid FEC Message\n");
         return;
     }
@@ -94,6 +122,22 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
 
 AntDevicePWR::AntDevicePWR(void)
     : AntDevice(15) {
+    deviceName = std::string("POWER");
+    valueNames.push_back("BALANCE");
+    valueNames.push_back("CADENCE");
+    valueNames.push_back("ACC_POWER");
+    valueNames.push_back("INST_POWER");
+    valueNames.push_back("LEFT_TE");
+    valueNames.push_back("RIGHT_TE");
+    valueNames.push_back("LEFT_PS");
+    valueNames.push_back("RIGHT_PS");
+    valueNames.push_back("N_BATTERIES");
+    valueNames.push_back("OPERATING_TIME");
+    valueNames.push_back("BATTERY_VOLTAGE");
+    valueNames.push_back("CRANK_LENGTH");
+    valueNames.push_back("CRANK_STATUS");
+    valueNames.push_back("SENSOR_STATUS");
+    valueNames.push_back("PEAK_TORQUE_THRESHOLD");
 }
 
 void AntDevicePWR::parseMessage(AntMessage *message) {
@@ -181,6 +225,10 @@ AntDeviceHR::AntDeviceHR(void)
     hbCount = 0;
     toggled = false;
     lastToggleBit = 0xFF;
+
+    deviceName = std::string("HEARTRATE");
+    valueNames.push_back("HEART_RATE");
+    valueNames.push_back("RR_INTERVAL");
 }
 
 void AntDeviceHR::parseMessage(AntMessage *message) {

@@ -27,9 +27,10 @@
 #ifndef SRC_ANTDEFS_H_
 #define SRC_ANTDEFS_H_
 
+#define USB_MAX_MESSAGE_SIZE                2048
+
 // ANT Messages
 #define ANT_SYNC_BYTE                       0xA4
-#define ANT_MAX_MESSAGE_SIZE                13
 #define ANT_MAX_DATA_SIZE                   13
 #define ANT_SYSTEM_RESET                    0x4A
 #define ANT_UNASSIGN_CHANNEL                0x41

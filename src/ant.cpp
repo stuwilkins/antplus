@@ -31,7 +31,6 @@
 #include "ant.h"
 #include "antdevice.h"
 #include "antchannel.h"
-#include "antusb.h"
 #include "debug.h"
 
 AntUsb::AntUsb(void) {
@@ -40,16 +39,19 @@ AntUsb::AntUsb(void) {
     usb_config = NULL;
     readEndpoint = -1;
     writeEndpoint = -1;
-    writeTimeout = 500;
+    writeTimeout = 256;
     readTimeout = 256;
     numChannels = 8;
 
+    DEBUG_PRINT("Creating %d channels.\n", numChannels);
     antChannel = new AntChannel[numChannels];
     for (int i=0; i < numChannels; i++) {
-        antChannel[i].setChannel(i + 1);
+        antChannel[i].setChannel(i);
+        antChannel[i].setType(AntDevice::TYPE_NONE);
     }
 
-    antChannel[0].setType(AntDevice::TYPE_HR);
+    // Set the start time
+    startTime = Clock::now();
 }
 
 AntUsb::~AntUsb(void) {
@@ -262,7 +264,7 @@ int AntUsb::bulkWrite(uint8_t *bytes, int size, int timeout) {
 
 int AntUsb::sendMessage(AntMessage *message, bool readReply) {
     int msg_len;
-    uint8_t msg[ANT_MAX_MESSAGE_SIZE];
+    uint8_t msg[USB_MAX_MESSAGE_SIZE];
 
     message->encode(msg, &msg_len);
 
@@ -280,9 +282,8 @@ int AntUsb::sendMessage(AntMessage *message, bool readReply) {
 }
 
 int AntUsb::readMessage(AntMessage *message) {
-    // uint8_t bytes[ANT_MAX_MESSAGE_SIZE];
-    uint8_t bytes[256];
-    int nbytes = bulkRead(bytes, ANT_MAX_MESSAGE_SIZE, readTimeout);
+    uint8_t bytes[USB_MAX_MESSAGE_SIZE];
+    int nbytes = bulkRead(bytes, USB_MAX_MESSAGE_SIZE, readTimeout);
     if (nbytes > 0) {
         DEBUG_PRINT("Recieved %d bytes.\n", nbytes);
         message->setTimestamp();
@@ -320,7 +321,7 @@ int AntUsb::assignChannel(uint8_t chanNum, bool master, uint8_t net) {
     sendMessage(&unassign);
 
     DEBUG_COMMENT("Sending ANT_ASSIGN_CHANNEL\n");
-    AntMessage assign(ANT_ASSIGN_CHANNEL, (unsigned int)chanNum,
+    AntMessage assign(ANT_ASSIGN_CHANNEL, chanNum,
             master ? CHANNEL_TYPE_TX : CHANNEL_TYPE_RX, net);
     return sendMessage(&assign);
 }
@@ -390,20 +391,20 @@ void* antusb_listener(void *ctx) {
 
     DEBUG_COMMENT("Started Listener Loop ....\n");
     for (;;) {
-        AntMessage r;
-        if (antusb->readMessage(&r) > 0) {
-            switch (r.getType()) {
+        AntMessage m;
+        if (antusb->readMessage(&m) > 0) {
+            switch (m.getType()) {
                 case ANT_NOTIF_STARTUP:
                     DEBUG_COMMENT("RESET OK\n");
                     break;
                 case ANT_CHANNEL_EVENT:
-                    antusb->channelProcessEvent(&r);
+                    antusb->channelProcessEvent(&m);
                     break;
                 case ANT_CHANNEL_ID:
-                    antusb->channelProcessID(&r);
+                    antusb->channelProcessID(&m);
                     break;
                 case ANT_BROADCAST_DATA:
-                    antusb->channelProcessBroadcast(&r);
+                    antusb->channelProcessBroadcast(&m);
                     break;
                 default:
                     DEBUG_COMMENT("Unknown ANT Type\n");
@@ -411,13 +412,12 @@ void* antusb_listener(void *ctx) {
             }
         }
 
-        if (!(counter % 20)) {
-            for (int i = 1; i <= antusb->getNumChannels(); i++) {
-                if (antusb->getChannel(i)->getState() ==
-                        AntChannel::STATE_OPEN_UNPAIRED) {
-                    DEBUG_PRINT("Requesting Channel ID on channel %d\n", i);
-                    antusb->requestMessage(i, ANT_CHANNEL_ID);
-                }
+        int r = counter % 40;
+        if (r < antusb->getNumChannels()) {
+            if (antusb->getChannel(r)->getState() ==
+                    AntChannel::STATE_OPEN_UNPAIRED) {
+                DEBUG_PRINT("Requesting Channel ID on channel %d\n", r);
+                antusb->requestMessage(r, ANT_CHANNEL_ID);
             }
         }
         counter++;
@@ -427,9 +427,9 @@ void* antusb_listener(void *ctx) {
 }
 
 int AntUsb::channelChangeStateTo(uint8_t chan, int state) {
+    DEBUG_PRINT("chan = %d, state = %d\n", chan, state);
     switch (state) {
         case AntChannel::STATE_ASSIGNED:
-            // TODO(swilkins) check why zero
             assignChannel(chan,
                     getChannel(chan)->getMaster(),
                     getChannel(chan)->getNetwork());
@@ -462,21 +462,39 @@ int AntUsb::channelChangeStateTo(uint8_t chan, int state) {
     return NOERROR;
 }
 
-int AntUsb::channelStart(uint8_t chan) {
+int AntUsb::channelStart(uint8_t chan, int type,
+        uint16_t id, bool wait) {
     // Start a channel config
+
+    AntChannel *antChannel = getChannel(chan);
+    antChannel->setType(type);
+    antChannel->setDeviceID(id);
+
     // Claim the channel.
 
-    if (getChannel(chan)->getState() !=
+    if (antChannel->getState() !=
             AntChannel::STATE_IDLE) {
         DEBUG_PRINT("Cannot start channel when not IDLE"
         "(current state = %d)\n",
-                getChannel(chan)->getState());
+                antChannel->getState());
         return ERROR;
     }
 
     // Ok the next level is ASSIGNED
 
     channelChangeStateTo(chan, AntChannel::STATE_ASSIGNED);
+
+    // If we wait .. spinlock until the channel is open
+    // TODO(swilkins) : We should add a timeout
+
+    if (wait) {
+        int state = antChannel->getState();
+        while ((state != AntChannel::STATE_OPEN_UNPAIRED)
+                && (state != AntChannel::STATE_OPEN_PAIRED)) {
+            sleep(1);
+            state = antChannel->getState();
+        }
+    }
 
     return NOERROR;
 }
@@ -486,12 +504,12 @@ int AntUsb::channelProcessID(AntMessage *m) {
     uint16_t id;
     uint8_t type;
     uint8_t chan = m->getChannel();
-    id  = (m->getData(0) << 8);
-    id |= m->getData(1);
+    id  = (m->getData(1) << 8);
+    id |= m->getData(0);
     type = m->getData(2);
 
-    DEBUG_PRINT("Processed Device ID 0x%04X type 0x%02X\n",
-            id, type);
+    DEBUG_PRINT("Processed Device ID 0x%04X type 0x%02X on channel %d\n",
+            id, type, chan);
 
     getChannel(chan)->addDeviceId(id);
 

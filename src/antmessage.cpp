@@ -127,7 +127,7 @@ int AntMessage::decode(uint8_t *data, int data_len) {
     }
 
     if (data[1] != (data_len - 4)) {
-        DEBUG_COMMENT("Data length does not match length in payload.");
+        DEBUG_COMMENT("Data length does not match length in payload.\n");
         return ERROR_LEN;
     }
 

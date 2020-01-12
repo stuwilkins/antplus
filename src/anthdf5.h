@@ -24,31 +24,18 @@
 // SOFTWARE.
 //
 
-#include <unistd.h>
-#include <pthread.h>
+#ifndef SRC_ANTHDF5_H_
+#define SRC_ANTHDF5_H_
 
-#include "debug.h"
+#include <H5Cpp.h>
+#include <string>
 #include "ant.h"
-#include "antusb.h"
-#include "antchannel.h"
-#include "antdevice.h"
 
-int main(int argc, char *argv[]) {
-    AntUsb antusb;
+class AntUsbHDF5 : public AntUsb {
+ public:
+    int writeData(std::string filename);
+ private:
+     H5::H5File *dataFile;
+};
 
-    antusb.init();
-    antusb.setup();
-
-    antusb.reset();
-
-    antusb.startListener();
-
-    antusb.setNetworkKey(0);
-
-    antusb.channelStart(1);
-
-    for (;;) { }
-
-    return 0;
-}
-
+#endif  // SRC_ANTHDF5_H_

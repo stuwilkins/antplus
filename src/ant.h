@@ -72,11 +72,15 @@ class AntUsb {
     int channelProcessEvent(AntMessage *m);
     int channelProcessBroadcast(AntMessage *m);
     int channelChangeStateTo(uint8_t chan, int state);
-    int channelStart(uint8_t chan);
+    int channelStart(uint8_t chan, int type,
+            uint16_t id = 0x0000, bool wait = true);
     AntChannel *getChannel(uint8_t chan) {
-        return &(antChannel[chan -1]);
+        return &(antChannel[chan]);
     }
     int getNumChannels(void) { return numChannels; }
+
+ protected:
+    time_point<Clock> startTime;
 
  private:
      libusb_context *usb_ctx;

@@ -54,7 +54,7 @@ class AntChannel {
 
     AntChannel(void);
     AntChannel(uint8_t chan, int type);
-    void setType(int type);
+    void setType(int t);
 
     void       setChannel(uint8_t chan) { chanNum = chan; }
     uint8_t    getChannel(void)         { return chanNum; }
@@ -67,12 +67,15 @@ class AntChannel {
     uint16_t   getSearchTimeout(void)   { return searchTimeout; }
     int        getType(void)            { return type; }
     int        getState(void)           { return currentState; }
+    uint16_t   getDeviceID(void)        { return deviceId; }
+    void       setDeviceID(uint16_t id) { deviceId = id; }
     void       setState(int state);
     void       addDeviceId(uint16_t devid);
 
-    AntDeviceFEC* getDeviceFEC(void)    { return deviceFEC; }
-    AntDeviceHR*  getDeviceHR(void)     { return deviceHR; }
-    AntDevicePWR* getDevicePWR(void)    { return devicePWR; }
+    AntDevice*    getDevice(void);
+    AntDeviceFEC* getDeviceFEC(void)    { return &deviceFEC; }
+    AntDeviceHR*  getDeviceHR(void)     { return &deviceHR; }
+    AntDevicePWR* getDevicePWR(void)    { return &devicePWR; }
 
  private:
     uint8_t  chanNum;
@@ -86,9 +89,9 @@ class AntChannel {
     uint8_t  searchTimeout;
     std::set<uint16_t> deviceIdSet;
     int          type;
-    AntDeviceFEC *deviceFEC;
-    AntDeviceHR  *deviceHR;
-    AntDevicePWR *devicePWR;
+    AntDeviceFEC deviceFEC;
+    AntDeviceHR  deviceHR;
+    AntDevicePWR devicePWR;
 };
 
 #endif  // SRC_ANTCHANNEL_H_

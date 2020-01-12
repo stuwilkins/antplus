@@ -3,6 +3,7 @@ project(ant-recorder VERSION 0.1)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(PreventInSourceBuilds)
+
 include(cpplint)
 cpplint_add_subdirectory(src)
 
@@ -19,10 +20,11 @@ function(enable_cxx_compiler_flag_if_supported flag)
     endif()
 endfunction()
 
-# example usage
 enable_cxx_compiler_flag_if_supported("-Wall")
 enable_cxx_compiler_flag_if_supported("-Wextra")
 enable_cxx_compiler_flag_if_supported("-pedantic")
+
+FIND_PACKAGE (HDF5 1.10 COMPONENTS CXX)
 
 # Add __FILENAME__ with short path
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
@@ -36,6 +38,7 @@ add_custom_command(
 	COMMAND ${CMAKE_COMMAND} -P
 	${CMAKE_SOURCE_DIR}/cmake/version.cmake
 )	
+add_custom_target(version_info DEPENDS ${CMAKE_BINARY_DIR}/version.cpp)
 
 add_compile_options(-DDEBUG_OUTPUT)
 

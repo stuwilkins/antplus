@@ -43,8 +43,9 @@
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
 
-#include <list>
+#include <vector>
 #include <chrono>
+#include <string>
 
 using Clock = std::chrono::steady_clock;
 using std::chrono::time_point;
@@ -60,11 +61,13 @@ class AntDeviceDatum {
  public:
     AntDeviceDatum(float v,
             time_point<Clock> t) {
-        val = v;
+        value = v;
         ts = t;
     }
+    float             getValue(void)     { return value; }
+    time_point<Clock> getTimestamp(void) { return ts; }
  private:
-    float val;
+    float value;
     time_point<Clock> ts;
 };
 
@@ -75,15 +78,30 @@ class AntDevice {
         TYPE_NONE = 0,
         TYPE_HR   = 1,
         TYPE_PWR  = 2,
-        TYPE_FEC  = 3
+        TYPE_FEC  = 3,
+        TYPE_PAIR = 4
     };
-    static AntDeviceParams params[4];
-    explicit AntDevice(int nMeas);
+    static AntDeviceParams params[5];
+    std::vector<std::string> measureNames;
+
+    AntDevice(void);
     ~AntDevice(void);
+    explicit AntDevice(int nMeas);
     void addDatum(int i, AntDeviceDatum val);
     void parseMessage(AntMessage *message);
+
+    std::vector<AntDeviceDatum>& getData(int i);
+    std::string getDeviceName(void);
+    std::vector<std::string>& getValueNames(void) { return valueNames; }
+    int getNumValues(void) { return nValues; }
+
  private:
-    std::list<AntDeviceDatum> *data;
+    int nValues;
+    std::vector<AntDeviceDatum> *data;
+
+ protected:
+    std::vector<std::string> valueNames;
+    std::string deviceName;
 };
 
 class AntDeviceFEC : public AntDevice {
