@@ -179,7 +179,7 @@ void AntMessage::encode(uint8_t *msg, int *len) {
     *len = antDataLen + 5;
 
 #ifdef DEBUG_OUTPUT
-    char bytes[100];
+    char bytes[20000];
     bytestream_to_string(bytes, sizeof(bytes), msg, *len);
     DEBUG_PRINT("ANT Message : %s\n",  bytes);
 #endif

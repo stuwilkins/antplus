@@ -223,7 +223,7 @@ int AntUsb::bulkRead(uint8_t *bytes, int size, int timeout) {
 
 #ifdef DEBUG_OUTPUT
     if (actualSize > 0) {
-        char sb[100];
+        char sb[20000];
         bytestream_to_string(sb, sizeof(sb), bytes, actualSize);
         DEBUG_PRINT("Recieved %d : %s\n", actualSize, sb);
     }
@@ -249,7 +249,7 @@ int AntUsb::bulkWrite(uint8_t *bytes, int size, int timeout) {
     }
 
 #ifdef DEBUG_OUTPUT
-    char sb[100];
+    char sb[20000];
     bytestream_to_string(sb, sizeof(sb), bytes, actualSize);
     DEBUG_PRINT("Wrote %d : %s\n", actualSize, sb);
 #endif
@@ -257,32 +257,35 @@ int AntUsb::bulkWrite(uint8_t *bytes, int size, int timeout) {
     return actualSize;
 }
 
-int AntUsb::sendMessage(AntMessage *message, bool readReply) {
+int AntUsb::sendMessage(AntMessage *message) {
     int msg_len;
     uint8_t msg[USB_MAX_MESSAGE_SIZE];
 
     message->encode(msg, &msg_len);
 
-    int rc = bulkWrite(msg, msg_len, writeTimeout);
-
-    if (readReply) {
-        AntMessage reply;
-        rc = readMessage(&reply);
-        if (rc) {
-            // reply.parse();
-        }
-    }
-
-    return rc;
+    return bulkWrite(msg, msg_len, writeTimeout);
 }
 
-int AntUsb::readMessage(AntMessage *message) {
+int AntUsb::readMessage(std::vector<AntMessage> *message) {
     uint8_t bytes[USB_MAX_MESSAGE_SIZE];
     int nbytes = bulkRead(bytes, USB_MAX_MESSAGE_SIZE, readTimeout);
+
     if (nbytes > 0) {
         DEBUG_PRINT("Recieved %d bytes.\n", nbytes);
-        message->setTimestamp();
-        message->decode(bytes, nbytes);
+        // Now we walk the data looking for sync bytes
+        int i = 0;
+        while (i < nbytes) {
+            // Search for sync
+            if (bytes[i] == ANT_SYNC_BYTE) {
+                // We have a message, second byte is length
+                uint8_t len = bytes[i+1] + 4;
+                message->push_back(AntMessage(&bytes[i], len));
+                message->back().setTimestamp();
+                i += len;
+            }
+        }
+        // message->setTimestamp();
+        // message->decode(bytes, nbytes);
     }
 
     return nbytes;
@@ -296,7 +299,7 @@ int AntUsb::reset(void) {
     usleep(500000L);
 
     AntMessage reply;
-    readMessage(&reply);
+    // readMessage(&reply);
     // reply.parse();
 
     return 0;
@@ -386,8 +389,9 @@ void* antusb_listener(void *ctx) {
 
     DEBUG_COMMENT("Started Listener Loop ....\n");
     for (;;) {
-        AntMessage m;
-        if (antusb->readMessage(&m) > 0) {
+        std::vector<AntMessage> message;
+        antusb->readMessage(&message);
+        for (auto & m : message) {
             switch (m.getType()) {
                 case ANT_NOTIF_STARTUP:
                     DEBUG_COMMENT("RESET OK\n");
@@ -407,12 +411,13 @@ void* antusb_listener(void *ctx) {
             }
         }
 
-        int r = counter % 40;
-        if (r < antusb->getNumChannels()) {
-            if (antusb->getChannel(r)->getState() ==
-                    AntChannel::STATE_OPEN_UNPAIRED) {
-                DEBUG_PRINT("Requesting Channel ID on channel %d\n", r);
-                antusb->requestMessage(r, ANT_CHANNEL_ID);
+        if (!(counter % 40)) {
+            for (int r=0; r < antusb->getNumChannels(); r++) {
+                if (antusb->getChannel(r)->getState() ==
+                        AntChannel::STATE_OPEN_UNPAIRED) {
+                    DEBUG_PRINT("Requesting Channel ID on channel %d\n", r);
+                    antusb->requestMessage(r, ANT_CHANNEL_ID);
+                }
             }
         }
         counter++;

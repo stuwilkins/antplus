@@ -34,6 +34,7 @@
 #include <libusb-1.0/libusb.h>
 
 #include <chrono>
+#include <vector>
 
 #include "antdefs.h"
 #include "antmessage.h"
@@ -54,8 +55,8 @@ class AntUsb {
     int setup(void);
     int bulkRead(uint8_t *bytes, int size, int timeout);
     int bulkWrite(uint8_t *bytes, int size, int timeout);
-    int sendMessage(AntMessage *message, bool readReply = false);
-    int readMessage(AntMessage *message);
+    int sendMessage(AntMessage *message);
+    int readMessage(std::vector<AntMessage> *message);
     int reset(void);
     int setNetworkKey(uint8_t net);
     int assignChannel(uint8_t chanNum, bool master, uint8_t net);
