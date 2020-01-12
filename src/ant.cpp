@@ -107,9 +107,8 @@ int AntUsb::setup(void) {
 
     if (!found) {
         // We never found the device
-        // TODO(swilkins) : Change returns
         DEBUG_COMMENT("Failed to find USB Device (RESET)");
-        return 0;
+        return ERROR;
     }
 
     // Now lets search again and open the device
@@ -128,9 +127,8 @@ int AntUsb::setup(void) {
                 if (libusb_open(dev, &handle)) {
                     DEBUG_PRINT("Failed to open device 0x%04X 0x%04X\n",
                             desc.idVendor, desc.idProduct);
-                    // TODO(swilkins) : Returns
                     libusb_free_device_list(list, 1);
-                    return 0;
+                    return ERROR;
                 } else {
                     found = true;
                     break;
@@ -141,24 +139,22 @@ int AntUsb::setup(void) {
 
     if (!found) {
         // We never found the device
-        // TODO(swilkins) : Change returns
         DEBUG_COMMENT("Failed to find USB Device (OPEN)");
-        return 0;
+        return ERROR;
     }
 
     DEBUG_PRINT("bNumConfigurations = %d\n",
             desc.bNumConfigurations);
     if (!desc.bNumConfigurations) {
         DEBUG_COMMENT("No valid configurations\n");
-        // TODO(swilkins) : Returns
-        return 0;
+        return ERROR;
     }
 
     libusb_config_descriptor *config;
     if (libusb_get_config_descriptor(dev, 0, &config)) {
         DEBUG_COMMENT("Unable to get usb config\n");
         libusb_free_config_descriptor(config);
-        return 0;
+        return ERROR;
     }
 
     DEBUG_PRINT("Number of Interfaces : %d\n",
@@ -167,13 +163,13 @@ int AntUsb::setup(void) {
     if (config->bNumInterfaces != 1) {
         DEBUG_COMMENT("Invalid number of interfaces.\n");
         libusb_free_config_descriptor(config);
-        return 0;
+        return ERROR;
     }
 
     if (config->interface[0].num_altsetting != 1) {
         DEBUG_COMMENT("Invalid number of alt settings.\n");
         libusb_free_config_descriptor(config);
-        return 0;
+        return ERROR;
     }
 
     DEBUG_PRINT("bNumEndpoints = %d\n",
@@ -181,7 +177,7 @@ int AntUsb::setup(void) {
     if (config->interface[0].altsetting[0].bNumEndpoints != 2) {
         DEBUG_COMMENT("Invalid Number of endpoints.\n");
         libusb_free_config_descriptor(config);
-        return 0;
+        return ERROR;
     }
 
     for (int i=0; i < 2; i++) {
@@ -204,8 +200,7 @@ int AntUsb::setup(void) {
     if (libusb_claim_interface(handle,
                 config->interface[0].altsetting[0].bInterfaceNumber)) {
         DEBUG_COMMENT("Unable to claim interface.\n");
-        // TODO(swilkins) : Change returns
-        return 0;
+        return ERROR;
     }
 
     usb_config = config;
@@ -435,7 +430,7 @@ int AntUsb::channelChangeStateTo(uint8_t chan, int state) {
                     getChannel(chan)->getNetwork());
             break;
         case AntChannel::STATE_ID_SET:
-            // TODO(swilkins) check why zero
+            // Slave Channel
             setChannelID(chan,
                     getChannel(chan)->getDeviceId(),
                     getChannel(chan)->getDeviceType(), 0);

@@ -99,7 +99,7 @@
 #define ANT_OFFSET_MESSAGE_ID               1
 #define ANT_OFFSET_MESSAGE_CODE             2
 
-#define GARMIN_USB2_VID                     0x0fcf
+#define GARMIN_USB2_VID                     0x0FCF
 #define GARMIN_USB2_PID                     0x1008
 #define GARMIN_OEM_PID                      0x1009
 
