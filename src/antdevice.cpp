@@ -59,7 +59,6 @@ void AntDevice::addDatum(int i, AntDeviceDatum val) {
 }
 
 std::vector<AntDeviceDatum>& AntDevice::getData(int i) {
-    // TODO(swilkins) Bounds checking?
     return data[i];
 }
 
