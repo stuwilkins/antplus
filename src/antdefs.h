@@ -27,11 +27,10 @@
 #ifndef SRC_ANTDEFS_H_
 #define SRC_ANTDEFS_H_
 
-#define USB_MAX_MESSAGE_SIZE                2048
+#define MAX_MESSAGE_SIZE                    2048
 
 // ANT Messages
 #define ANT_SYNC_BYTE                       0xA4
-#define ANT_MAX_DATA_SIZE                   13
 #define ANT_SYSTEM_RESET                    0x4A
 #define ANT_UNASSIGN_CHANNEL                0x41
 #define ANT_ASSIGN_CHANNEL                  0x42
@@ -47,6 +46,7 @@
 #define ANT_SET_SERIAL_NUMBER               0x65
 #define ANT_ENABLE_EXT_MSGS                 0x66
 #define ANT_ENABLE_LED                      0x68
+#define ANT_LIB_CONFIG                      0x6E
 #define ANT_SYSTEM_RESET                    0x4A
 #define ANT_OPEN_CHANNEL                    0x4B
 #define ANT_CLOSE_CHANNEL                   0x4C
@@ -75,24 +75,24 @@
 #define CHANNEL_TYPE_PAIR                   0x40
 
 // Channel messages
-#define RESPONSE_NO_ERROR                    0
-#define EVENT_RX_SEARCH_TIMEOUT              1
-#define EVENT_RX_FAIL                        2
-#define EVENT_TX                             3
-#define EVENT_TRANSFER_RX_FAILED             4
-#define EVENT_TRANSFER_TX_COMPLETED          5
-#define EVENT_TRANSFER_TX_FAILED             6
-#define EVENT_CHANNEL_CLOSED                 7
-#define EVENT_RX_BROADCAST                  10
-#define EVENT_RX_ACKNOWLEDGED               11
-#define EVENT_RX_BURST_PACKET               12
-#define CHANNEL_IN_WRONG_STATE              21
-#define CHANNEL_NOT_OPENED                  22
-#define CHANNEL_ID_NOT_SET                  24
-#define TRANSFER_IN_PROGRESS                31
-#define TRANSFER_SEQUENCE_NUMBER_ERROR      32
-#define INVALID_MESSAGE                     40
-#define INVALID_NETWORK_NUMBER              41
+#define RESPONSE_NO_ERROR                   0x00
+#define EVENT_RX_SEARCH_TIMEOUT             0x01
+#define EVENT_RX_FAIL                       0x02
+#define EVENT_TX                            0x03
+#define EVENT_TRANSFER_RX_FAILED            0x04
+#define EVENT_TRANSFER_TX_COMPLETED         0x05
+#define EVENT_TRANSFER_TX_FAILED            0x06
+#define EVENT_CHANNEL_CLOSED                0x07
+#define EVENT_RX_BROADCAST                  0x0A
+#define EVENT_RX_ACKNOWLEDGED               0x0B
+#define EVENT_RX_BURST_PACKET               0x0C
+#define CHANNEL_IN_WRONG_STATE              0x15
+#define CHANNEL_NOT_OPENED                  0x16
+#define CHANNEL_ID_NOT_SET                  0x17
+#define TRANSFER_IN_PROGRESS                0x1F
+#define TRANSFER_SEQUENCE_NUMBER_ERROR      0x20
+#define INVALID_MESSAGE                     0x28
+#define INVALID_NETWORK_NUMBER              0x29
 
 #define ANT_OFFSET_DATA                     0
 #define ANT_OFFSET_CHANNEL_NUMBER           0
@@ -120,6 +120,10 @@
 
 #define ANT_DEVICE_HR_PREVIOUS              0x04
 
-// DataStruct for device type parameters
+// Extended format settings
+
+#define ANT_EXT_MSG_TIMESTAMP               0x20
+#define ANT_EXT_MSG_RSSI                    0x40
+#define ANT_EXT_MSG_CHAN_ID                 0x80
 
 #endif  // SRC_ANTDEFS_H_

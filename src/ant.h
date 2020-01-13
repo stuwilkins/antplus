@@ -67,6 +67,8 @@ class AntUsb {
     int setChannelFreq(uint8_t chan, uint8_t frequency);
     int openChannel(uint8_t chan);
     int requestMessage(uint8_t chan, uint8_t message);
+    int requestDataPage(uint8_t chan, uint8_t page);
+    int setLibConfig(uint8_t chan, uint8_t config);
     int startListener(void);
     int changeStateTo(int state);
     int channelProcessID(AntMessage *m);

@@ -73,9 +73,9 @@ class AntMessage {
                getTimestamp(void) { return ts; }
 
  private:
-    uint8_t           antType;
+    uint8_t               antType;
     uint8_t           antChannel;
-    uint8_t           antData[ANT_MAX_DATA_SIZE];
+    uint8_t           antData[MAX_MESSAGE_SIZE];
     int               antDataLen;
     time_point<Clock> ts;
 };

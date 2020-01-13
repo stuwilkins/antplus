@@ -30,7 +30,7 @@
 AntMessage::AntMessage(void) {
     antType = 0x00;
     antChannel = 0x00;
-    for (int i=0; i < ANT_MAX_DATA_SIZE; i++) {
+    for (int i=0; i < MAX_MESSAGE_SIZE; i++) {
         antData[i] = 0x00;
     }
     antDataLen = 0;
@@ -153,9 +153,23 @@ int AntMessage::decode(uint8_t *data, int data_len) {
         antData[i] = data[4+i];
     }
 
-    DEBUG_PRINT("antDataLen = %d\n", antDataLen);
-    DEBUG_PRINT("antType    = 0x%02X\n", antType);
-    DEBUG_PRINT("antChannel = %d\n", antChannel);
+    DEBUG_PRINT("antDataLen = %d antType = 0x%02X antChannel = %d\n",
+            antDataLen, antType, antChannel);
+
+    if (antDataLen > 8) {
+        // We have an extended format
+        uint8_t ext = antData[8];
+        if (ext & ANT_EXT_MSG_CHAN_ID) {
+            uint16_t id;
+            id  = (antData[10] << 8);
+            id |= antData[9];
+            uint8_t type = antData[11];
+            uint8_t transType = antData[12];
+            DEBUG_PRINT("Device ID = 0x%04X type = 0x%02X transType = 0x%02X\n",
+                    id, type, transType);
+        }
+    }
+
     return NOERROR;
 }
 

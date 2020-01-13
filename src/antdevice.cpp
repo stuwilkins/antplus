@@ -36,15 +36,14 @@ AntDeviceParams AntDevice::params[] = {
     {  AntDevice::TYPE_NONE, 0x00, 0x0000, 0x00 }
 };
 
-AntDevice::AntDevice(void) {
-    deviceName = std::string("none");
-    data = nullptr;
-}
+// AntDevice::AntDevice(void) {
+//     deviceName = std::string("NONE");
+//     data = nullptr;
+// }
 
-AntDevice::AntDevice(int n)
-    : AntDevice() {
+AntDevice::AntDevice(int n) {
     // Create the list of values
-    nValues = n;
+    nValues += n;
     data = new std::vector<AntDeviceDatum>[nValues];
 }
 
@@ -67,15 +66,17 @@ std::string AntDevice::getDeviceName(void) {
 }
 
 AntDeviceFEC::AntDeviceFEC(void)
-     : AntDevice(7) {
+     : AntDevice(9) {
     deviceName = std::string("FE-C");
-    valueNames.push_back("INCLINE");
-    valueNames.push_back("RESISTANCE");
-    valueNames.push_back("CADENCE");
-    valueNames.push_back("ACC_POWER");
-    valueNames.push_back("INST_POWER");
-    valueNames.push_back("INST_SPEED");
-    valueNames.push_back("CYCLE_LENGTH");
+    valueNames.push_back("GENERAL_INST_SPEED");
+    valueNames.push_back("SETTINGS_CYCLE_LENGTH");
+    valueNames.push_back("SETTINGS_RESISTANCE");
+    valueNames.push_back("SETTINGS_INCLINE");
+    valueNames.push_back("TRAINER_CADENCE");
+    valueNames.push_back("TRAINER_ACC_POWER");
+    valueNames.push_back("TRAINER_INST_POWER");
+    valueNames.push_back("TRAINER_STATUS");
+    valueNames.push_back("TRAINER_FLAGS");
 }
 
 
@@ -84,36 +85,55 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
 
-    if (dataLen != 8) {
+    if (dataLen < 8) {
         DEBUG_COMMENT("Invalid FEC Message\n");
         return;
     }
 
     if (data[0] == ANT_DEVICE_FEC_GENERAL) {
-            uint16_t instSpeed = data[4];
-            instSpeed |= (data[5] << 8);
-            addDatum(INST_SPEED, AntDeviceDatum(instSpeed, ts));
+            uint16_t _instSpeed;
+            _instSpeed  = data[4];
+            _instSpeed |= (data[5] << 8);
+            float instSpeed = (float)_instSpeed * 0.001;
+
+            addDatum(GENERAL_INST_SPEED, AntDeviceDatum(instSpeed, ts));
+
+            DEBUG_PRINT("FE-C General, %f\n", instSpeed);
+
     } else if (data[0] == ANT_DEVICE_FEC_GENERAL_SETTINGS) {
-            uint8_t cycleLength = data[3];
-            uint8_t resistance = data[6];
-            uint16_t incline = data[4];
-            incline |= (data[5] << 8);
-            addDatum(CYCLE_LENGTH, AntDeviceDatum(cycleLength, ts));
-            addDatum(RESISTANCE, AntDeviceDatum(resistance, ts));
-            addDatum(INCLINE, AntDeviceDatum(incline, ts));
-            DEBUG_PRINT("FE-C General Data, %d, %d, %d\n",
+            float cycleLength = (float)data[3] * 0.01;
+            int16_t _incline;
+            _incline  = data[4];
+            _incline |= (data[5] << 8);
+            float incline = (float)_incline * 0.01;
+            float resistance = (float)data[6] * 0.5;
+
+            addDatum(SETTINGS_CYCLE_LENGTH, AntDeviceDatum(cycleLength, ts));
+            addDatum(SETTINGS_RESISTANCE, AntDeviceDatum(resistance, ts));
+            addDatum(SETTINGS_INCLINE, AntDeviceDatum(incline, ts));
+
+            DEBUG_PRINT("FE-C General Data, %f, %f, %f\n",
                     cycleLength, resistance, incline);
+
     } else if (data[0] == ANT_DEVICE_FEC_TRAINER) {
             uint8_t cadence = data[2];
-            uint16_t accPower = data[3];
+            uint16_t accPower;
+            accPower  = data[3];
             accPower |= (data[4] << 8);
-            uint16_t instPower = data[5];
-            instPower |= (data[6] << 8);
-            addDatum(CADENCE, AntDeviceDatum(cadence, ts));
-            addDatum(ACC_POWER, AntDeviceDatum(accPower, ts));
-            addDatum(INST_POWER, AntDeviceDatum(instPower, ts));
-            DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d\n", cadence, accPower,
-                    instPower);
+            uint16_t instPower;
+            instPower  = data[5];
+            instPower |= ((data[6] & 0x0F) << 8);
+            uint8_t trainerStatus = (data[6] >> 4);
+            uint8_t trainerFlags = data[7] & 0x0F;
+
+            addDatum(TRAINER_CADENCE, AntDeviceDatum((float)cadence, ts));
+            addDatum(TRAINER_ACC_POWER, AntDeviceDatum((float)accPower, ts));
+            addDatum(TRAINER_INST_POWER, AntDeviceDatum((float)instPower, ts));
+            addDatum(TRAINER_STATUS, AntDeviceDatum((float)trainerStatus, ts));
+            addDatum(TRAINER_FLAGS, AntDeviceDatum((float)trainerFlags, ts));
+
+            DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d, 0x%02X, 0x%02X\n",
+                    cadence, accPower, instPower, trainerStatus, trainerFlags);
     } else {
         DEBUG_PRINT("Unknown FEC Page 0x%02X\n", data[0]);
     }
@@ -144,7 +164,7 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
 
-    if (dataLen != 8) {
+    if (dataLen < 8) {
         DEBUG_COMMENT("Invalid Power Message\n");
         return;
     }
@@ -170,16 +190,16 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
         DEBUG_PRINT("POWER Standard, %d, %d, %d, %d\n", balance, cadence,
                 accPower, instPower);
     } else if (data[0] == ANT_DEVICE_POWER_TEPS) {
-        uint8_t leftTE = data[2];
-        uint8_t rightTE = data[3];
-        uint8_t leftPS = data[4];
-        uint8_t rightPS = data[5];
+        float leftTE = (float)data[2] * 0.5;
+        float rightTE = (float)data[3] * 0.5;
+        float leftPS = (float)data[4] * 0.5;
+        float rightPS = (float)data[5] * 0.5;
 
         addDatum(LEFT_TE, AntDeviceDatum(leftTE, ts));
         addDatum(RIGHT_TE, AntDeviceDatum(rightTE, ts));
         addDatum(LEFT_PS, AntDeviceDatum(leftPS, ts));
         addDatum(RIGHT_PS, AntDeviceDatum(rightPS, ts));
-        DEBUG_PRINT("POWER TEPS, %d, %d, %d, %d\n", leftTE, rightTE,
+        DEBUG_PRINT("POWER TEPS, %f, %f, %f, %f\n", leftTE, rightTE,
                 leftPS, rightPS);
     } else if (data[0] == ANT_DEVICE_POWER_BATTERY) {
         uint8_t nBatteries = data[2] & 0x0F;
@@ -196,19 +216,20 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
                 operatingTime, batteryVoltage);
     } else if (data[0] == ANT_DEVICE_POWER_PARAMS) {
         if (data[1] == ANT_DEVICE_POWER_PARAMS_CRANK) {
-            uint8_t crankLength = data[4];
+            float crankLength = (float)data[4];
+            crankLength = (crankLength * 0.5) + 110.0;
             uint8_t crankStatus = data[5] & 0x03;
             uint8_t sensorStatus = (data[6] >> 3) & 0x01;
-            DEBUG_PRINT("POWER Params Crank, %d, %d, %d\n",
+            DEBUG_PRINT("POWER Params Crank, %f, %d, %d\n",
                     crankLength, crankStatus, sensorStatus);
             addDatum(CRANK_LENGTH, AntDeviceDatum(crankLength, ts));
             addDatum(CRANK_STATUS, AntDeviceDatum(crankStatus, ts));
             addDatum(SENSOR_STATUS, AntDeviceDatum(sensorStatus, ts));
         } else if (data[1] == ANT_DEVICE_POWER_PARAMS_TORQUE) {
-            uint8_t peakTorqueThresh = data[7];
+            float peakTorqueThresh = (float)data[7] * 0.5;
             addDatum(PEAK_TORQUE_THRESHOLD,
                     AntDeviceDatum(peakTorqueThresh, ts));
-            DEBUG_PRINT("POWER Params Torque, %d\n", peakTorqueThresh);
+            DEBUG_PRINT("POWER Params Torque, %f\n", peakTorqueThresh);
         } else {
             DEBUG_COMMENT("Unknown power Paramaters Page\n");
         }
@@ -235,7 +256,7 @@ void AntDeviceHR::parseMessage(AntMessage *message) {
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
 
-    if (dataLen != 8) {
+    if (dataLen < 8) {
         DEBUG_COMMENT("Invalid HR Message\n");
         return;
     }
@@ -268,6 +289,8 @@ void AntDeviceHR::parseMessage(AntMessage *message) {
         addDatum(RR_INTERVAL, AntDeviceDatum(rrInterval, ts));
         DEBUG_PRINT("HR Previous, %d, %d, %f\n", previousHbEventTime,
                 hbEventTime, rrInterval);
+    } else {
+        DEBUG_PRINT("Unknown HR Page 0x%02X\n", data[0] & 0x7F);
     }
 }
 

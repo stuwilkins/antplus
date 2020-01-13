@@ -82,45 +82,54 @@ class AntDevice {
         TYPE_PAIR = 4
     };
     static AntDeviceParams params[5];
-    std::vector<std::string> measureNames;
 
-    AntDevice(void);
-    ~AntDevice(void);
     explicit AntDevice(int nMeas);
+    ~AntDevice(void);
+
     void addDatum(int i, AntDeviceDatum val);
     void parseMessage(AntMessage *message);
 
     std::vector<AntDeviceDatum>& getData(int i);
     std::string getDeviceName(void);
     std::vector<std::string>& getValueNames(void) { return valueNames; }
-    int getNumValues(void) { return nValues; }
+    int                       getNumValues(void)  { return nValues; }
 
  private:
+    // enum {
+    //     // DATA From Common Pages
+    // }
     int nValues;
     std::vector<AntDeviceDatum> *data;
 
  protected:
     std::vector<std::string> valueNames;
+    std::vector<std::string> metaNames;
     std::string deviceName;
 };
 
 class AntDeviceFEC : public AntDevice {
  public:
     enum {
-        INCLINE      = 0,
-        RESISTANCE   = 1,
-        CADENCE      = 2,
-        ACC_POWER    = 3,
-        INST_POWER   = 4,
-        INST_SPEED   = 5,
-        CYCLE_LENGTH = 6
+        GENERAL_INST_SPEED    = 0,
+        SETTINGS_CYCLE_LENGTH = 1,
+        SETTINGS_RESISTANCE   = 2,
+        SETTINGS_INCLINE      = 3,
+        TRAINER_CADENCE       = 4,
+        TRAINER_ACC_POWER     = 5,
+        TRAINER_INST_POWER    = 6,
+        TRAINER_STATUS        = 7,
+        TRAINER_FLAGS         = 8
     };
     AntDeviceFEC(void);
-     void parseMessage(AntMessage *message);
+    void parseMessage(AntMessage *message);
 };
 
 class AntDevicePWR : public AntDevice {
  public:
+    AntDevicePWR(void);
+    void parseMessage(AntMessage *message);
+
+ private:
     enum {
         BALANCE              = 0,
         CADENCE               = 1,
@@ -138,38 +147,19 @@ class AntDevicePWR : public AntDevice {
         SENSOR_STATUS         = 13,
         PEAK_TORQUE_THRESHOLD = 14
     };
-    AntDevicePWR(void);
-    void parseMessage(AntMessage *message);
-
- private:
-    // uint8_t balance;           // %
-    // uint8_t cadence;           // RPM
-    // uint16_t accPower;         // W
-    // uint16_t instPower;        // W
-    // uint8_t leftTE;            // 0.5%
-    // uint8_t rightTE;           // 0.5%
-    // uint8_t leftPS;            // 0.5%
-    // uint8_t rightPS;           // 0.5%
-    // uint8_t nBatteries;
-    // uint32_t operatingTime;    // 2s or 16s
-    // uint8_t batteryVoltage;    // 1/256V
-    // uint8_t crankLength;       // X*0.5 mm + 110.0 mm
-    // uint8_t crankStatus;       // 00 Invalid, 01 Default
-    //                            // 10 Manually set, 11 Auto Set
-    // uint8_t sensorStatus;      // SW Missmach != 0
-    // uint8_t peakTorqueThresh;  // 0.5%
 };
 
 class AntDeviceHR : public AntDevice {
  public:
-    enum {
-        HEARTRATE = 0,
-        RR_INTERVAL = 1,
-    };
     AntDeviceHR(void);
     void parseMessage(AntMessage *message);
 
  private:
+    enum {
+        HEARTRATE = 0,
+        RR_INTERVAL = 1,
+    };
+
     uint16_t hbEventTime;
     uint16_t previousHbEventTime;
     uint8_t hbCount;

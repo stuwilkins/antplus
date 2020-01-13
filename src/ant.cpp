@@ -259,7 +259,7 @@ int AntUsb::bulkWrite(uint8_t *bytes, int size, int timeout) {
 
 int AntUsb::sendMessage(AntMessage *message) {
     int msg_len;
-    uint8_t msg[USB_MAX_MESSAGE_SIZE];
+    uint8_t msg[MAX_MESSAGE_SIZE];
 
     message->encode(msg, &msg_len);
 
@@ -267,8 +267,8 @@ int AntUsb::sendMessage(AntMessage *message) {
 }
 
 int AntUsb::readMessage(std::vector<AntMessage> *message) {
-    uint8_t bytes[USB_MAX_MESSAGE_SIZE];
-    int nbytes = bulkRead(bytes, USB_MAX_MESSAGE_SIZE, readTimeout);
+    uint8_t bytes[MAX_MESSAGE_SIZE];
+    int nbytes = bulkRead(bytes, MAX_MESSAGE_SIZE, readTimeout);
 
     if (nbytes > 0) {
         DEBUG_PRINT("Recieved %d bytes.\n", nbytes);
@@ -362,7 +362,23 @@ int AntUsb::setChannelFreq(uint8_t chan, uint8_t frequency) {
     return sendMessage(&chanFreq);
 }
 
+int AntUsb::setLibConfig(uint8_t chan, uint8_t config) {
+    DEBUG_COMMENT("Sending ANT_LIB_CONFIG\n");
+    (void)chan;  // Ignore channel ....
+    AntMessage libConfig(ANT_LIB_CONFIG, 0x00, config);
+    return sendMessage(&libConfig);
+}
+
+int AntUsb::requestDataPage(uint8_t chan, uint8_t page) {
+    DEBUG_COMMENT("Sending ANT_ACK_DATA for \"Request Data Page\"\n");
+    uint8_t req[8] = { 0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, page, 0x01};
+    AntMessage request(ANT_ACK_DATA, chan, req, sizeof(req));
+    return sendMessage(&request);
+}
+
 int AntUsb::openChannel(uint8_t chan) {
+    // Set the LIB Config before opening channel
+    setLibConfig(chan, 0x80);
     DEBUG_COMMENT("Sending ANT_OPEN_CHANNEL\n");
     AntMessage open(ANT_OPEN_CHANNEL, chan);
     return sendMessage(&open);
@@ -406,17 +422,28 @@ void* antusb_listener(void *ctx) {
                     antusb->channelProcessBroadcast(&m);
                     break;
                 default:
-                    DEBUG_COMMENT("Unknown ANT Type\n");
+                    DEBUG_PRINT("Unable to process ... type = 0x%02X\n",
+                            m.getType());
                     break;
             }
         }
 
         if (!(counter % 40)) {
             for (int r=0; r < antusb->getNumChannels(); r++) {
-                if (antusb->getChannel(r)->getState() ==
-                        AntChannel::STATE_OPEN_UNPAIRED) {
-                    DEBUG_PRINT("Requesting Channel ID on channel %d\n", r);
-                    antusb->requestMessage(r, ANT_CHANNEL_ID);
+                AntChannel *chan = antusb->getChannel(r);
+
+                if (chan->getState() == AntChannel::STATE_OPEN_UNPAIRED) {
+                    // DEBUG_PRINT("Requesting Channel ID on channel %d\n", r);
+                    // antusb->requestMessage(chan->getChannel(),
+                    // ANT_CHANNEL_ID);
+
+                    // Now do broadcasts
+
+                    if (chan->getType() == AntDevice::TYPE_FEC) {
+                        // We need to send requests
+                        antusb->requestDataPage(chan->getChannel(), 0x31);
+                        // antusb->requestDataPage(chan->getChannel(), 0x31);
+                    }
                 }
             }
         }
@@ -522,6 +549,8 @@ int AntUsb::channelProcessEvent(AntMessage *m) {
     uint8_t commandCode = m->getData(0);
     uint8_t responseCode = m->getData(1);
 
+    AntChannel *antChan = getChannel(m->getChannel());
+
     DEBUG_PRINT("Channel response (chan = %d"
             " type = 0x%02X code = 0x%02X response ="
             " 0x%02X)\n", m->getChannel(), m->getType(),
@@ -531,41 +560,47 @@ int AntUsb::channelProcessEvent(AntMessage *m) {
         case RESPONSE_NO_ERROR:
             switch (commandCode) {
                 case ANT_ASSIGN_CHANNEL:
-                    getChannel(chan)->setState(AntChannel::STATE_ASSIGNED);
+                    antChan->setState(AntChannel::STATE_ASSIGNED);
                     channelChangeStateTo(chan, AntChannel::STATE_ID_SET);
                     break;
                 case ANT_CHANNEL_ID:
-                    getChannel(chan)->setState(AntChannel::STATE_ID_SET);
+                    antChan->setState(AntChannel::STATE_ID_SET);
                     channelChangeStateTo(chan, AntChannel::STATE_SET_TIMEOUT);
                     break;
                 case ANT_LP_SEARCH_TIMEOUT:
-                    getChannel(chan)->setState(
+                    antChan->setState(
                             AntChannel::STATE_SET_TIMEOUT);
                     channelChangeStateTo(chan, AntChannel::STATE_SET_PERIOD);
                     break;
                 case ANT_CHANNEL_PERIOD:
-                    getChannel(chan)->setState(AntChannel::STATE_SET_PERIOD);
+                    antChan->setState(AntChannel::STATE_SET_PERIOD);
                     channelChangeStateTo(chan, AntChannel::STATE_SET_FREQ);
                     break;
                 case ANT_CHANNEL_FREQUENCY:
-                    getChannel(chan)->setState(AntChannel::STATE_SET_FREQ);
+                    antChan->setState(AntChannel::STATE_SET_FREQ);
                     channelChangeStateTo(chan,
                             AntChannel::STATE_OPEN_UNPAIRED);
                     break;
                 case ANT_OPEN_CHANNEL:
                     // Do nothing, but set state
-                    getChannel(chan)->setState(
+                    antChan->setState(
                             AntChannel::STATE_OPEN_UNPAIRED);
+                    break;
+                default:
+                    DEBUG_PRINT("Unknown command 0x%02X\n", commandCode);
                     break;
             }
             break;
         case EVENT_RX_SEARCH_TIMEOUT:
             DEBUG_PRINT("Search timeout on channel %d\n", chan);
-            getChannel(chan)->setState(AntChannel::STATE_OPEN_UNPAIRED);
+            antChan->setState(AntChannel::STATE_OPEN_UNPAIRED);
             break;
         case EVENT_CHANNEL_CLOSED:
-            getChannel(chan)->setState(AntChannel::STATE_CLOSED);
+            antChan->setState(AntChannel::STATE_CLOSED);
             channelChangeStateTo(chan, AntChannel::STATE_OPEN_UNPAIRED);
+            break;
+        default:
+            DEBUG_PRINT("Unknown response 0x%02X\n", responseCode);
             break;
     }
     return NOERROR;

@@ -41,15 +41,16 @@ class AntChannel {
     enum {
         // The state machine to define
         // the various states for an ANT+ channel
-        STATE_IDLE          = 0,
-        STATE_ASSIGNED      = 1,
-        STATE_ID_SET        = 2,
-        STATE_SET_TIMEOUT   = 3,
-        STATE_SET_PERIOD    = 4,
-        STATE_SET_FREQ      = 5,
-        STATE_OPEN_UNPAIRED = 6,
-        STATE_OPEN_PAIRED   = 7,
-        STATE_CLOSED        = 8
+        STATE_IDLE           = 0,
+        STATE_ASSIGNED       = 1,
+        STATE_ID_SET         = 2,
+        STATE_SET_TIMEOUT    = 3,
+        STATE_SET_PERIOD     = 4,
+        STATE_SET_FREQ       = 5,
+        STATE_SET_LIB_CONFIG = 6,
+        STATE_OPEN_UNPAIRED  = 7,
+        STATE_OPEN_PAIRED    = 8,
+        STATE_CLOSED         = 9
     };
 
     AntChannel(void);

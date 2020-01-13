@@ -143,9 +143,9 @@ int main(int argc, char *argv[]) {
 
     antusb.setNetworkKey(0);
 
-    antusb.channelStart(0, AntDevice::TYPE_HR, 0x01E5);
-    antusb.channelStart(1, AntDevice::TYPE_PWR, 0xD42D);
-    antusb.channelStart(2, AntDevice::TYPE_PWR, 0x635E);
+    // antusb.channelStart(0, AntDevice::TYPE_HR, 0x01E5);
+    // antusb.channelStart(1, AntDevice::TYPE_PWR, 0xD42D);
+    // antusb.channelStart(2, AntDevice::TYPE_PWR, 0x635E);
     antusb.channelStart(3, AntDevice::TYPE_FEC, 0x635E);
 
     signal(SIGINT, signalHandler);
