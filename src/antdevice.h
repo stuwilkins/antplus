@@ -43,8 +43,13 @@ struct AntDeviceParams {
 
 class AntDeviceDatum {
  public:
-    AntDeviceDatum(float v,
-            time_point<Clock> t) {
+    AntDeviceDatum(void) {
+        value = 0;
+    }
+    AntDeviceDatum(float v, time_point<Clock> t) {
+        setDatum(v, t);
+    }
+    void setDatum(float v, time_point<Clock> t) {
         value = v;
         ts = t;
     }
@@ -83,7 +88,8 @@ class AntDevice {
     //     // DATA From Common Pages
     // }
     int nValues;
-    std::vector<AntDeviceDatum> *data;
+    AntDeviceDatum *data;
+    std::vector<AntDeviceDatum> *tsData;
 
  protected:
     std::vector<std::string> valueNames;

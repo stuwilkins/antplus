@@ -28,6 +28,22 @@
 #include "antdevice.h"
 #include "debug.h"
 
+AntDevice::AntDevice(int n) {
+    // Create the list of values
+    nValues += n;
+    tsData = new std::vector<AntDeviceDatum>[nValues];
+    data   = new AntDeviceDatum[nValues];
+}
+
+AntDevice::~AntDevice(void) {
+    if (tsData != nullptr) {
+        delete [] tsData;
+    }
+    if (data != nullptr) {
+        delete [] data;
+    }
+}
+
 AntDeviceParams AntDevice::params[] = {
     {  AntDevice::TYPE_HR,   0x78, 0x1F86, 0x39 },
     {  AntDevice::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
@@ -36,24 +52,13 @@ AntDeviceParams AntDevice::params[] = {
     {  AntDevice::TYPE_NONE, 0x00, 0x0000, 0x00 }
 };
 
-AntDevice::AntDevice(int n) {
-    // Create the list of values
-    nValues += n;
-    data = new std::vector<AntDeviceDatum>[nValues];
-}
-
-AntDevice::~AntDevice(void) {
-    if (data != nullptr) {
-        delete [] data;
-    }
-}
-
 void AntDevice::addDatum(int i, AntDeviceDatum val) {
-    data[i].push_back(val);
+    tsData[i].push_back(val);
+    data[i] = val;
 }
 
 std::vector<AntDeviceDatum>& AntDevice::getData(int i) {
-    return data[i];
+    return tsData[i];
 }
 
 std::string AntDevice::getDeviceName(void) {
