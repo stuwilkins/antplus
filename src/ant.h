@@ -41,7 +41,11 @@
 #include "antchannel.h"
 #include "ant_network_key.h"
 
+#define SLEEP_DURATION       50000L
+#define RESET_DURATION      500000L
+
 void* antusb_listener(void *ctx);
+void* antusb_poller(void *ctx);
 
 class AntUsb {
  public:
@@ -81,8 +85,11 @@ class AntUsb {
     AntChannel *getChannel(uint8_t chan) {
         return &(antChannel[chan]);
     }
-    int getNumChannels(void) { return numChannels; }
-    bool getThreadRun(void) { return threadRun; }
+    int  getNumChannels(void) { return numChannels; }
+    bool getThreadRun(void)   { return threadRun; }
+    int  getPollTime(void)    { return pollTime; }
+    void setPollTime(int t)   { pollTime = t; }
+    time_point<Clock> getStartTime(void) { return startTime; }
 
  protected:
     time_point<Clock> startTime;
@@ -100,6 +107,8 @@ class AntUsb {
      pthread_t listenerId;
      pthread_t pollerId;
      bool threadRun;
+     int pollTime;
+     bool extMessages;
 };
 
 #endif  // SRC_ANT_H_

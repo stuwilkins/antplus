@@ -27,33 +27,12 @@
 #ifndef SRC_ANTDEVICE_H_
 #define SRC_ANTDEVICE_H_
 
-#define ANT_DEVICE_FEC_GENERAL              0x10
-#define ANT_DEVICE_FEC_GENERAL_SETTINGS     0x11
-#define ANT_DEVICE_FEC_TRAINER              0x19
-#define ANT_DEVICE_FEC_COMMAND_STATUS       0x47
-#define ANT_DEVICE_FEC_COMMAND_RESISTANCE   0x30
-#define ANT_DEVICE_FEC_COMMAND_POWER        0x31
-#define ANT_DEVICE_FEC_COMMAND_WIND         0x32
-#define ANT_DEVICE_FEC_COMMAND_TRACK        0x33
-
-#define ANT_DEVICE_POWER_STANDARD           0x10
-#define ANT_DEVICE_POWER_TEPS               0x13
-#define ANT_DEVICE_POWER_BATTERY            0x52
-#define ANT_DEVICE_POWER_PARAMS             0x02
-#define ANT_DEVICE_POWER_PARAMS_CRANK       0x01
-#define ANT_DEVICE_POWER_PARAMS_TORQUE      0x02
-
-#define ANT_DEVICE_HR_PREVIOUS              0x04
-
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
 
 #include <vector>
 #include <chrono>
 #include <string>
-
-using Clock = std::chrono::steady_clock;
-using std::chrono::time_point;
 
 struct AntDeviceParams {
     int type;
@@ -129,6 +108,9 @@ class AntDeviceFEC : public AntDevice {
     };
     AntDeviceFEC(void);
     void parseMessage(AntMessage *message);
+
+ private:
+    uint8_t lastCommandSeq;
 };
 
 class AntDevicePWR : public AntDevice {

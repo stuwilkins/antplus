@@ -36,11 +36,6 @@ AntDeviceParams AntDevice::params[] = {
     {  AntDevice::TYPE_NONE, 0x00, 0x0000, 0x00 }
 };
 
-// AntDevice::AntDevice(void) {
-//     deviceName = std::string("NONE");
-//     data = nullptr;
-// }
-
 AntDevice::AntDevice(int n) {
     // Create the list of values
     nValues += n;
@@ -79,6 +74,8 @@ AntDeviceFEC::AntDeviceFEC(void)
     valueNames.push_back("TRAINER_FLAGS");
     valueNames.push_back("TRAINER_TARGET_RESISTANCE");
     valueNames.push_back("TRAINER_TARGET_POWER");
+
+    lastCommandSeq = 0xFF;
 }
 
 
@@ -136,29 +133,35 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
 
         DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d, 0x%02X, 0x%02X\n",
                 cadence, accPower, instPower, trainerStatus, trainerFlags);
-    } else if (data[0] == ANT_DEVICE_FEC_COMMAND_STATUS) {
+
+    } else if (data[0] == ANT_DEVICE_COMMON_STATUS) {
         // This gives us the requested control.
         if (data[3] == 0x00) {
-            if (data[1] == ANT_DEVICE_FEC_COMMAND_RESISTANCE) {
-                uint8_t resistance = data[7];
+            // Now check if sequence has changed
+            if (data[2] != lastCommandSeq) {
+                if (data[1] == ANT_DEVICE_FEC_COMMAND_RESISTANCE) {
+                    uint8_t resistance = data[7];
 
-                addDatum(TRAINER_TARGET_RESISTANCE,
-                        AntDeviceDatum(resistance, ts));
+                    addDatum(TRAINER_TARGET_RESISTANCE,
+                            AntDeviceDatum(resistance, ts));
 
-                DEBUG_PRINT("FE-C Target Resistance, %d\n", resistance);
+                    DEBUG_PRINT("FE-C Target Resistance, %d\n", resistance);
 
-            } else if (data[1] == ANT_DEVICE_FEC_COMMAND_POWER) {
-                uint16_t pwr;
-                pwr  = data[7] << 8;
-                pwr |= data[6];
+                } else if (data[1] == ANT_DEVICE_FEC_COMMAND_POWER) {
+                    uint16_t pwr;
+                    pwr  = data[7] << 8;
+                    pwr |= data[6];
 
-                addDatum(TRAINER_TARGET_POWER,
-                        AntDeviceDatum(pwr, ts));
+                    addDatum(TRAINER_TARGET_POWER,
+                            AntDeviceDatum(pwr, ts));
 
-                DEBUG_PRINT("FE-C Target Power, %d\n", pwr);
+                    DEBUG_PRINT("FE-C Target Power, %d\n", pwr);
+                }
+            } else {
+                DEBUG_COMMENT("FE-C No new command\n");
             }
         } else {
-            DEBUG_COMMENT("FE-C last command invalid or uninitialized\n");
+            DEBUG_COMMENT("FE-C Last command invalid or uninitialized\n");
         }
     } else {
         DEBUG_PRINT("Unknown FEC Page 0x%02X\n", data[0]);

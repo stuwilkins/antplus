@@ -34,15 +34,17 @@
 #include "debug.h"
 
 AntUsb::AntUsb(void) {
-    usb_ctx = NULL;
-    usb_handle = NULL;
-    usb_config = NULL;
-    readEndpoint = -1;
+    usb_ctx       = NULL;
+    usb_handle    = NULL;
+    usb_config    = NULL;
+    readEndpoint  = -1;
     writeEndpoint = -1;
-    writeTimeout = 256;
-    readTimeout = 256;
-    numChannels = 8;
-    threadRun = false;
+    writeTimeout  = 256;
+    readTimeout   = 256;
+    numChannels   = 8;
+    threadRun     = false;
+    pollTime      = 2000;  // ms
+    extMessages   = false;
 
     DEBUG_PRINT("Creating %d channels.\n", numChannels);
     antChannel = new AntChannel[numChannels];
@@ -108,7 +110,7 @@ int AntUsb::setup(void) {
 
     if (!found) {
         // We never found the device
-        DEBUG_COMMENT("Failed to find USB Device (RESET)");
+        DEBUG_COMMENT("Failed to find USB Device (RESET)\n");
         return ERROR;
     }
 
@@ -140,7 +142,7 @@ int AntUsb::setup(void) {
 
     if (!found) {
         // We never found the device
-        DEBUG_COMMENT("Failed to find USB Device (OPEN)");
+        DEBUG_COMMENT("Failed to find USB Device (OPEN)\n");
         return ERROR;
     }
 
@@ -297,7 +299,7 @@ int AntUsb::reset(void) {
     AntMessage resetMessage(ANT_SYSTEM_RESET, 0);
     sendMessage(&resetMessage);
 
-    usleep(500000L);
+    usleep(RESET_DURATION);
 
     AntMessage reply;
     // readMessage(&reply);
@@ -378,8 +380,12 @@ int AntUsb::requestDataPage(uint8_t chan, uint8_t page) {
 }
 
 int AntUsb::openChannel(uint8_t chan) {
-    // Set the LIB Config before opening channel
-    setLibConfig(chan, 0x80);
+    if (extMessages) {
+        // Set the LIB Config before opening channel
+        // if we want to get extended messages
+        setLibConfig(chan, 0x80);
+    }
+
     DEBUG_COMMENT("Sending ANT_OPEN_CHANNEL\n");
     AntMessage open(ANT_OPEN_CHANNEL, chan);
     return sendMessage(&open);
@@ -397,6 +403,8 @@ int AntUsb::startThreads(void) {
     DEBUG_COMMENT("Starting listener thread ...\n");
     pthread_create(&listenerId, NULL, antusb_listener, (void *)this);
 
+    DEBUG_COMMENT("Starting poller thread ...\n");
+    pthread_create(&pollerId, NULL, antusb_poller, (void *)this);
     return NOERROR;
 }
 
@@ -407,15 +415,52 @@ int AntUsb::stopThreads(void) {
     pthread_join(listenerId, NULL);
     DEBUG_COMMENT("Listener Thread Joined.\n");
 
+    pthread_join(pollerId, NULL);
+    DEBUG_COMMENT("Poller Thread Joined.\n");
     return NOERROR;
+}
+
+void* antusb_poller(void *ctx) {
+    AntUsb *antusb = (AntUsb*) ctx;
+
+    DEBUG_COMMENT("Started Listener Loop ....\n");
+
+    time_point<Clock> pollStart = Clock::now();
+
+    while (antusb->getThreadRun()) {
+        time_point<Clock> now = Clock::now();
+
+        auto poll = std::chrono::duration_cast
+            <std::chrono::milliseconds> (now - pollStart);
+
+        // DEBUG_PRINT("poll = %ld\n", poll.count());
+
+        if (poll.count() >= antusb->getPollTime()) {
+            for (int r=0; r < antusb->getNumChannels(); r++) {
+                AntChannel *chan = antusb->getChannel(r);
+
+                int state = chan->getState();
+                if ((state == AntChannel::STATE_OPEN_UNPAIRED) ||
+                        (state == AntChannel::STATE_OPEN_PAIRED)) {
+                    if (chan->getType() == AntDevice::TYPE_FEC) {
+                        // We need to send requests
+                        antusb->requestDataPage(chan->getChannel(),
+                                ANT_DEVICE_COMMON_STATUS);
+                        pollStart = Clock::now();
+                    }
+                }
+            }
+        } else {
+            usleep(SLEEP_DURATION);  // be a nice thread ...
+        }
+    }
+
+    pthread_exit(NULL);
+    return NULL;
 }
 
 void* antusb_listener(void *ctx) {
     AntUsb *antusb = (AntUsb*) ctx;
-    uint16_t counter = 0;
-
-    // Recieve Loop
-
     DEBUG_COMMENT("Started Listener Loop ....\n");
 
     while (antusb->getThreadRun()) {
@@ -445,26 +490,6 @@ void* antusb_listener(void *ctx) {
                     break;
             }
         }
-
-        if (!(counter % 40)) {
-            for (int r=0; r < antusb->getNumChannels(); r++) {
-                AntChannel *chan = antusb->getChannel(r);
-
-                if (chan->getState() == AntChannel::STATE_OPEN_UNPAIRED) {
-                    // DEBUG_PRINT("Requesting Channel ID on channel %d\n", r);
-                    // antusb->requestMessage(chan->getChannel(),
-                    // ANT_CHANNEL_ID);
-
-                    // Now do broadcasts
-
-                    if (chan->getType() == AntDevice::TYPE_FEC) {
-                        // We need to send requests
-                        antusb->requestDataPage(chan->getChannel(), 0x47);
-                    }
-                }
-            }
-        }
-        counter++;
     }
 
     pthread_exit(NULL);
@@ -536,7 +561,7 @@ int AntUsb::channelStart(uint8_t chan, int type,
         int state = antChannel->getState();
         while ((state != AntChannel::STATE_OPEN_UNPAIRED)
                 && (state != AntChannel::STATE_OPEN_PAIRED)) {
-            sleep(1);
+            usleep(SLEEP_DURATION);
             state = antChannel->getState();
         }
     }

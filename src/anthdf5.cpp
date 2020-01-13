@@ -44,35 +44,34 @@ void signalHandler(int signum) {
     stop = true;
 }
 
-int AntUsbHDF5::writeData(std::string filename) {
+int write_data(AntUsb *antusb, std::string filename) {
     H5::H5File file(filename, H5F_ACC_TRUNC);
 
     file.createGroup("/DATA");
     file.createGroup("/TIMESTAMP");
 
     // Cycle through each channel
-    for (int i=0; i < getNumChannels(); i++) {
-        DEBUG_PRINT("Processing channel %d\n", i);
-        AntChannel *chan = getChannel(i);
+    for (int i=0; i < antusb->getNumChannels(); i++) {
+        AntChannel *chan = antusb->getChannel(i);
         AntDevice *dev = chan->getDevice();
         if (dev != nullptr) {
-            DEBUG_PRINT("Channel %d Values %d\n",
-                    i, dev->getNumValues());
             std::string devName = dev->getDeviceName() + '_';
             devName = devName + std::to_string(chan->getDeviceID());
-            DEBUG_PRINT("Channel %d devName = %s\n", i, devName.c_str());
+
+            DEBUG_PRINT("Processing Channel %d (devName = %s)\n",
+                    i, devName.c_str());
 
             file.createGroup("/DATA/" + devName);
             file.createGroup("/TIMESTAMP/" + devName);
 
             for (int j=0; j < dev->getNumValues(); j++) {
                 // This is for each value
-                DEBUG_PRINT("Channel %d Datapoints %ld\n",
-                        i, dev->getData(j).size());
-
                 // For the values create an array
-                int size = dev->getData(j).size();
-                if (size > 0) {
+                int64_t size = dev->getData(j).size();
+                if (size) {
+                    DEBUG_PRINT("Channel %d Datapoints %ld\n",
+                            i, size);
+
                     hsize_t dimsf[1];
                     dimsf[0] = size;
 
@@ -105,7 +104,8 @@ int AntUsbHDF5::writeData(std::string filename) {
                     for (int i = 0; i < size; i++) {
                         auto ms = std::chrono::duration_cast
                             <std::chrono::milliseconds>
-                            (dev->getData(j)[i].getTimestamp() - startTime);
+                            (dev->getData(j)[i].getTimestamp()
+                             - antusb->getStartTime());
                         tval[i] = ms.count();
                     }
 
@@ -121,8 +121,6 @@ int AntUsbHDF5::writeData(std::string filename) {
                     delete [] val;
                 }
             }
-        } else {
-            DEBUG_PRINT("No device on channel %d\n", i);
         }
     }
 
@@ -132,12 +130,19 @@ int AntUsbHDF5::writeData(std::string filename) {
 int main(int argc, char *argv[]) {
     (void)argc;
     (void)argv;
-    AntUsbHDF5 antusb;
+    AntUsb antusb;
 
-    antusb.init();
-    antusb.setup();
+    if (antusb.init()) {
+        return -127;
+    }
 
-    antusb.reset();
+    if (antusb.setup()) {
+        return -127;
+    }
+
+    if (antusb.reset()) {
+        return -127;
+    }
 
     antusb.startThreads();
 
@@ -150,13 +155,12 @@ int main(int argc, char *argv[]) {
 
     signal(SIGINT, signalHandler);
     while (!stop) {
-        sleep(1);
+        usleep(100000L);
     }
 
     antusb.stopThreads();
 
-    antusb.writeData("data.h5");
+    write_data(&antusb, "data.h5");
 
     return 0;
 }
-

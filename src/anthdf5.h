@@ -31,11 +31,6 @@
 #include <string>
 #include "ant.h"
 
-class AntUsbHDF5 : public AntUsb {
- public:
-    int writeData(std::string filename);
- private:
-     H5::H5File *dataFile;
-};
+int write_data(AntUsb *antusb, std::string filename);
 
 #endif  // SRC_ANTHDF5_H_
