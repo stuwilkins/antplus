@@ -30,6 +30,11 @@
 #define ANT_DEVICE_FEC_GENERAL              0x10
 #define ANT_DEVICE_FEC_GENERAL_SETTINGS     0x11
 #define ANT_DEVICE_FEC_TRAINER              0x19
+#define ANT_DEVICE_FEC_COMMAND_STATUS       0x47
+#define ANT_DEVICE_FEC_COMMAND_RESISTANCE   0x30
+#define ANT_DEVICE_FEC_COMMAND_POWER        0x31
+#define ANT_DEVICE_FEC_COMMAND_WIND         0x32
+#define ANT_DEVICE_FEC_COMMAND_TRACK        0x33
 
 #define ANT_DEVICE_POWER_STANDARD           0x10
 #define ANT_DEVICE_POWER_TEPS               0x13
@@ -110,15 +115,17 @@ class AntDevice {
 class AntDeviceFEC : public AntDevice {
  public:
     enum {
-        GENERAL_INST_SPEED    = 0,
-        SETTINGS_CYCLE_LENGTH = 1,
-        SETTINGS_RESISTANCE   = 2,
-        SETTINGS_INCLINE      = 3,
-        TRAINER_CADENCE       = 4,
-        TRAINER_ACC_POWER     = 5,
-        TRAINER_INST_POWER    = 6,
-        TRAINER_STATUS        = 7,
-        TRAINER_FLAGS         = 8
+        GENERAL_INST_SPEED        = 0,
+        SETTINGS_CYCLE_LENGTH     = 1,
+        SETTINGS_RESISTANCE       = 2,
+        SETTINGS_INCLINE          = 3,
+        TRAINER_CADENCE           = 4,
+        TRAINER_ACC_POWER         = 5,
+        TRAINER_INST_POWER        = 6,
+        TRAINER_STATUS            = 7,
+        TRAINER_FLAGS             = 8,
+        TRAINER_TARGET_RESISTANCE = 9,
+        TRAINER_TARGET_POWER      = 10
     };
     AntDeviceFEC(void);
     void parseMessage(AntMessage *message);

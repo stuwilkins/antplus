@@ -69,7 +69,8 @@ class AntUsb {
     int requestMessage(uint8_t chan, uint8_t message);
     int requestDataPage(uint8_t chan, uint8_t page);
     int setLibConfig(uint8_t chan, uint8_t config);
-    int startListener(void);
+    int startThreads(void);
+    int stopThreads(void);
     int changeStateTo(int state);
     int channelProcessID(AntMessage *m);
     int channelProcessEvent(AntMessage *m);
@@ -81,6 +82,7 @@ class AntUsb {
         return &(antChannel[chan]);
     }
     int getNumChannels(void) { return numChannels; }
+    bool getThreadRun(void) { return threadRun; }
 
  protected:
     time_point<Clock> startTime;
@@ -96,6 +98,8 @@ class AntUsb {
      int numChannels;
      AntChannel *antChannel;
      pthread_t listenerId;
+     pthread_t pollerId;
+     bool threadRun;
 };
 
 #endif  // SRC_ANT_H_

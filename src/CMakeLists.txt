@@ -9,7 +9,8 @@ set(SOURCE_FILES ${CMAKE_BINARY_DIR}/version.cpp
 	anthdf5.cpp
 	)
 
-set_property(SOURCE ${CMAKE_BINARY_DIR}/version.cpp PROPERTY GENERATED 1)
+set_property(SOURCE ${CMAKE_BINARY_DIR}/version.cpp 
+	PROPERTY GENERATED 1)
 
 add_executable(ant-recorder ${SOURCE_FILES})
 

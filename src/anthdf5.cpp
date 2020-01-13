@@ -139,7 +139,7 @@ int main(int argc, char *argv[]) {
 
     antusb.reset();
 
-    antusb.startListener();
+    antusb.startThreads();
 
     antusb.setNetworkKey(0);
 
@@ -152,6 +152,8 @@ int main(int argc, char *argv[]) {
     while (!stop) {
         sleep(1);
     }
+
+    antusb.stopThreads();
 
     antusb.writeData("data.h5");
 

@@ -42,6 +42,7 @@ AntUsb::AntUsb(void) {
     writeTimeout = 256;
     readTimeout = 256;
     numChannels = 8;
+    threadRun = false;
 
     DEBUG_PRINT("Creating %d channels.\n", numChannels);
     antChannel = new AntChannel[numChannels];
@@ -371,7 +372,7 @@ int AntUsb::setLibConfig(uint8_t chan, uint8_t config) {
 
 int AntUsb::requestDataPage(uint8_t chan, uint8_t page) {
     DEBUG_COMMENT("Sending ANT_ACK_DATA for \"Request Data Page\"\n");
-    uint8_t req[8] = { 0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, page, 0x01};
+    uint8_t req[8] = { 0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x81, page, 0x01};
     AntMessage request(ANT_ACK_DATA, chan, req, sizeof(req));
     return sendMessage(&request);
 }
@@ -390,9 +391,21 @@ int AntUsb::requestMessage(uint8_t chan, uint8_t message) {
     return sendMessage(&req);
 }
 
-int AntUsb::startListener(void) {
+int AntUsb::startThreads(void) {
+    threadRun = true;
+
     DEBUG_COMMENT("Starting listener thread ...\n");
     pthread_create(&listenerId, NULL, antusb_listener, (void *)this);
+
+    return NOERROR;
+}
+
+int AntUsb::stopThreads(void) {
+    DEBUG_COMMENT("Stopping threads.....\n");
+    threadRun = false;
+
+    pthread_join(listenerId, NULL);
+    DEBUG_COMMENT("Listener Thread Joined.\n");
 
     return NOERROR;
 }
@@ -404,7 +417,8 @@ void* antusb_listener(void *ctx) {
     // Recieve Loop
 
     DEBUG_COMMENT("Started Listener Loop ....\n");
-    for (;;) {
+
+    while (antusb->getThreadRun()) {
         std::vector<AntMessage> message;
         antusb->readMessage(&message);
         for (auto & m : message) {
@@ -419,6 +433,10 @@ void* antusb_listener(void *ctx) {
                     antusb->channelProcessID(&m);
                     break;
                 case ANT_BROADCAST_DATA:
+                    antusb->channelProcessBroadcast(&m);
+                    break;
+                case ANT_ACK_DATA:
+                    // We process these the same as broadcasts
                     antusb->channelProcessBroadcast(&m);
                     break;
                 default:
@@ -441,8 +459,7 @@ void* antusb_listener(void *ctx) {
 
                     if (chan->getType() == AntDevice::TYPE_FEC) {
                         // We need to send requests
-                        antusb->requestDataPage(chan->getChannel(), 0x31);
-                        // antusb->requestDataPage(chan->getChannel(), 0x31);
+                        antusb->requestDataPage(chan->getChannel(), 0x47);
                     }
                 }
             }
@@ -450,6 +467,7 @@ void* antusb_listener(void *ctx) {
         counter++;
     }
 
+    pthread_exit(NULL);
     return NULL;
 }
 
@@ -598,6 +616,14 @@ int AntUsb::channelProcessEvent(AntMessage *m) {
         case EVENT_CHANNEL_CLOSED:
             antChan->setState(AntChannel::STATE_CLOSED);
             channelChangeStateTo(chan, AntChannel::STATE_OPEN_UNPAIRED);
+            break;
+        case EVENT_TRANSFER_TX_COMPLETED:
+            DEBUG_PRINT("TX Transfer Completed on channel %d\n",
+                    antChan->getChannel());
+            break;
+        case EVENT_RX_FAIL:
+            DEBUG_PRINT("RX Failed on channel %d\n",
+                    antChan->getChannel());
             break;
         default:
             DEBUG_PRINT("Unknown response 0x%02X\n", responseCode);

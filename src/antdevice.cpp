@@ -66,7 +66,7 @@ std::string AntDevice::getDeviceName(void) {
 }
 
 AntDeviceFEC::AntDeviceFEC(void)
-     : AntDevice(9) {
+     : AntDevice(11) {
     deviceName = std::string("FE-C");
     valueNames.push_back("GENERAL_INST_SPEED");
     valueNames.push_back("SETTINGS_CYCLE_LENGTH");
@@ -77,6 +77,8 @@ AntDeviceFEC::AntDeviceFEC(void)
     valueNames.push_back("TRAINER_INST_POWER");
     valueNames.push_back("TRAINER_STATUS");
     valueNames.push_back("TRAINER_FLAGS");
+    valueNames.push_back("TRAINER_TARGET_RESISTANCE");
+    valueNames.push_back("TRAINER_TARGET_POWER");
 }
 
 
@@ -91,49 +93,73 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
     }
 
     if (data[0] == ANT_DEVICE_FEC_GENERAL) {
-            uint16_t _instSpeed;
-            _instSpeed  = data[4];
-            _instSpeed |= (data[5] << 8);
-            float instSpeed = (float)_instSpeed * 0.001;
+        uint16_t _instSpeed;
+        _instSpeed  = data[4];
+        _instSpeed |= (data[5] << 8);
+        float instSpeed = (float)_instSpeed * 0.001;
 
-            addDatum(GENERAL_INST_SPEED, AntDeviceDatum(instSpeed, ts));
+        addDatum(GENERAL_INST_SPEED, AntDeviceDatum(instSpeed, ts));
 
-            DEBUG_PRINT("FE-C General, %f\n", instSpeed);
+        DEBUG_PRINT("FE-C General, %f\n", instSpeed);
 
     } else if (data[0] == ANT_DEVICE_FEC_GENERAL_SETTINGS) {
-            float cycleLength = (float)data[3] * 0.01;
-            int16_t _incline;
-            _incline  = data[4];
-            _incline |= (data[5] << 8);
-            float incline = (float)_incline * 0.01;
-            float resistance = (float)data[6] * 0.5;
+        float cycleLength = (float)data[3] * 0.01;
+        int16_t _incline;
+        _incline  = data[4];
+        _incline |= (data[5] << 8);
+        float incline = (float)_incline * 0.01;
+        float resistance = (float)data[6] * 0.5;
 
-            addDatum(SETTINGS_CYCLE_LENGTH, AntDeviceDatum(cycleLength, ts));
-            addDatum(SETTINGS_RESISTANCE, AntDeviceDatum(resistance, ts));
-            addDatum(SETTINGS_INCLINE, AntDeviceDatum(incline, ts));
+        addDatum(SETTINGS_CYCLE_LENGTH, AntDeviceDatum(cycleLength, ts));
+        addDatum(SETTINGS_RESISTANCE, AntDeviceDatum(resistance, ts));
+        addDatum(SETTINGS_INCLINE, AntDeviceDatum(incline, ts));
 
-            DEBUG_PRINT("FE-C General Data, %f, %f, %f\n",
-                    cycleLength, resistance, incline);
+        DEBUG_PRINT("FE-C General Data, %f, %f, %f\n",
+                cycleLength, resistance, incline);
 
     } else if (data[0] == ANT_DEVICE_FEC_TRAINER) {
-            uint8_t cadence = data[2];
-            uint16_t accPower;
-            accPower  = data[3];
-            accPower |= (data[4] << 8);
-            uint16_t instPower;
-            instPower  = data[5];
-            instPower |= ((data[6] & 0x0F) << 8);
-            uint8_t trainerStatus = (data[6] >> 4);
-            uint8_t trainerFlags = data[7] & 0x0F;
+        uint8_t cadence = data[2];
+        uint16_t accPower;
+        accPower  = data[3];
+        accPower |= (data[4] << 8);
+        uint16_t instPower;
+        instPower  = data[5];
+        instPower |= ((data[6] & 0x0F) << 8);
+        uint8_t trainerStatus = (data[6] >> 4);
+        uint8_t trainerFlags = data[7] & 0x0F;
 
-            addDatum(TRAINER_CADENCE, AntDeviceDatum((float)cadence, ts));
-            addDatum(TRAINER_ACC_POWER, AntDeviceDatum((float)accPower, ts));
-            addDatum(TRAINER_INST_POWER, AntDeviceDatum((float)instPower, ts));
-            addDatum(TRAINER_STATUS, AntDeviceDatum((float)trainerStatus, ts));
-            addDatum(TRAINER_FLAGS, AntDeviceDatum((float)trainerFlags, ts));
+        addDatum(TRAINER_CADENCE, AntDeviceDatum((float)cadence, ts));
+        addDatum(TRAINER_ACC_POWER, AntDeviceDatum((float)accPower, ts));
+        addDatum(TRAINER_INST_POWER, AntDeviceDatum((float)instPower, ts));
+        addDatum(TRAINER_STATUS, AntDeviceDatum((float)trainerStatus, ts));
+        addDatum(TRAINER_FLAGS, AntDeviceDatum((float)trainerFlags, ts));
 
-            DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d, 0x%02X, 0x%02X\n",
-                    cadence, accPower, instPower, trainerStatus, trainerFlags);
+        DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d, 0x%02X, 0x%02X\n",
+                cadence, accPower, instPower, trainerStatus, trainerFlags);
+    } else if (data[0] == ANT_DEVICE_FEC_COMMAND_STATUS) {
+        // This gives us the requested control.
+        if (data[3] == 0x00) {
+            if (data[1] == ANT_DEVICE_FEC_COMMAND_RESISTANCE) {
+                uint8_t resistance = data[7];
+
+                addDatum(TRAINER_TARGET_RESISTANCE,
+                        AntDeviceDatum(resistance, ts));
+
+                DEBUG_PRINT("FE-C Target Resistance, %d\n", resistance);
+
+            } else if (data[1] == ANT_DEVICE_FEC_COMMAND_POWER) {
+                uint16_t pwr;
+                pwr  = data[7] << 8;
+                pwr |= data[6];
+
+                addDatum(TRAINER_TARGET_POWER,
+                        AntDeviceDatum(pwr, ts));
+
+                DEBUG_PRINT("FE-C Target Power, %d\n", pwr);
+            }
+        } else {
+            DEBUG_COMMENT("FE-C last command invalid or uninitialized\n");
+        }
     } else {
         DEBUG_PRINT("Unknown FEC Page 0x%02X\n", data[0]);
     }
