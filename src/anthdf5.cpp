@@ -67,7 +67,7 @@ int write_data(AntUsb *antusb, std::string filename) {
             for (int j=0; j < dev->getNumValues(); j++) {
                 // This is for each value
                 // For the values create an array
-                int64_t size = dev->getData(j).size();
+                int64_t size = dev->getTsData(j).size();
                 if (size) {
                     DEBUG_PRINT("Channel %d Datapoints %ld\n",
                             i, size);
@@ -79,7 +79,7 @@ int write_data(AntUsb *antusb, std::string filename) {
 
                     float *val = new float[size];
                     for (int i = 0; i < size; i++) {
-                        val[i] = dev->getData(j)[i].getValue();
+                        val[i] = dev->getTsData(j)[i].getValue();
                     }
 
                     H5::DataSpace dataspace(1, dimsf);
@@ -104,7 +104,7 @@ int write_data(AntUsb *antusb, std::string filename) {
                     for (int i = 0; i < size; i++) {
                         auto ms = std::chrono::duration_cast
                             <std::chrono::milliseconds>
-                            (dev->getData(j)[i].getTimestamp()
+                            (dev->getTsData(j)[i].getTimestamp()
                              - antusb->getStartTime());
                         tval[i] = ms.count();
                     }
@@ -148,9 +148,9 @@ int main(int argc, char *argv[]) {
 
     antusb.setNetworkKey(0);
 
-    // antusb.channelStart(0, AntDevice::TYPE_HR, 0x01E5);
-    // antusb.channelStart(1, AntDevice::TYPE_PWR, 0xD42D);
-    // antusb.channelStart(2, AntDevice::TYPE_PWR, 0x635E);
+    antusb.channelStart(0, AntDevice::TYPE_HR, 0x01E5);
+    antusb.channelStart(1, AntDevice::TYPE_PWR, 0xD42D);
+    antusb.channelStart(2, AntDevice::TYPE_PWR, 0x635E);
     antusb.channelStart(3, AntDevice::TYPE_FEC, 0x635E);
 
     signal(SIGINT, signalHandler);

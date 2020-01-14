@@ -78,7 +78,8 @@ class AntDevice {
     void addDatum(int i, AntDeviceDatum val);
     void parseMessage(AntMessage *message);
 
-    std::vector<AntDeviceDatum>& getData(int i);
+    std::vector<AntDeviceDatum>& getTsData(int i);
+    AntDeviceDatum getData(int i);
     std::string getDeviceName(void);
     std::vector<std::string>& getValueNames(void) { return valueNames; }
     int                       getNumValues(void)  { return nValues; }

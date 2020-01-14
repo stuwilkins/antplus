@@ -57,8 +57,12 @@ void AntDevice::addDatum(int i, AntDeviceDatum val) {
     data[i] = val;
 }
 
-std::vector<AntDeviceDatum>& AntDevice::getData(int i) {
+std::vector<AntDeviceDatum>& AntDevice::getTsData(int i) {
     return tsData[i];
+}
+
+AntDeviceDatum AntDevice::getData(int i) {
+    return data[i];
 }
 
 std::string AntDevice::getDeviceName(void) {
@@ -143,14 +147,18 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
         // This gives us the requested control.
         if (data[3] == 0x00) {
             // Now check if sequence has changed
-            if (data[2] != lastCommandSeq) {
+            uint8_t commandSeq = data[2];
+            if (commandSeq != lastCommandSeq) {
+                lastCommandSeq = commandSeq;
+
                 if (data[1] == ANT_DEVICE_FEC_COMMAND_RESISTANCE) {
                     uint8_t resistance = data[7];
 
                     addDatum(TRAINER_TARGET_RESISTANCE,
                             AntDeviceDatum(resistance, ts));
 
-                    DEBUG_PRINT("FE-C Target Resistance, %d\n", resistance);
+                    DEBUG_PRINT("FE-C Target Resistance, %d, %d\n",
+                            resistance, commandSeq);
 
                 } else if (data[1] == ANT_DEVICE_FEC_COMMAND_POWER) {
                     uint16_t pwr;
@@ -160,10 +168,12 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
                     addDatum(TRAINER_TARGET_POWER,
                             AntDeviceDatum(pwr, ts));
 
-                    DEBUG_PRINT("FE-C Target Power, %d\n", pwr);
+                    DEBUG_PRINT("FE-C Target Power, %d, %d\n",
+                            pwr, commandSeq);
                 }
             } else {
-                DEBUG_COMMENT("FE-C No new command\n");
+                DEBUG_PRINT("FE-C No new command, %d, %d\n",
+                        commandSeq, lastCommandSeq);
             }
         } else {
             DEBUG_COMMENT("FE-C Last command invalid or uninitialized\n");
