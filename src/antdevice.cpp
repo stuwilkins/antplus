@@ -152,23 +152,24 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
                 lastCommandSeq = commandSeq;
 
                 if (data[1] == ANT_DEVICE_FEC_COMMAND_RESISTANCE) {
-                    uint8_t resistance = data[7];
+                    float resistance = (float)data[7] * 0.5;
 
                     addDatum(TRAINER_TARGET_RESISTANCE,
                             AntDeviceDatum(resistance, ts));
 
-                    DEBUG_PRINT("FE-C Target Resistance, %d, %d\n",
+                    DEBUG_PRINT("FE-C Target Resistance, %f, %d\n",
                             resistance, commandSeq);
 
                 } else if (data[1] == ANT_DEVICE_FEC_COMMAND_POWER) {
-                    uint16_t pwr;
-                    pwr  = data[7] << 8;
-                    pwr |= data[6];
+                    uint16_t _pwr;
+                    _pwr  = data[7] << 8;
+                    _pwr |= data[6];
+                    float pwr = _pwr * 0.25;
 
                     addDatum(TRAINER_TARGET_POWER,
                             AntDeviceDatum(pwr, ts));
 
-                    DEBUG_PRINT("FE-C Target Power, %d, %d\n",
+                    DEBUG_PRINT("FE-C Target Power, %f, %d\n",
                             pwr, commandSeq);
                 }
             } else {

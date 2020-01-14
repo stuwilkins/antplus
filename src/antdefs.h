@@ -102,20 +102,7 @@
 #define GARMIN_USB2_VID                     0x0FCF
 #define GARMIN_USB2_PID                     0x1008
 #define GARMIN_OEM_PID                      0x1009
-
-// DEVICE Definitions
-
-#define ANT_DEVICE_FEC_GENERAL              0x10
-#define ANT_DEVICE_FEC_GENERAL_SETTINGS     0x11
-#define ANT_DEVICE_FEC_TRAINER              0x19
-
-#define ANT_DEVICE_POWER_STANDARD           0x10
-#define ANT_DEVICE_POWER_TEPS               0x13
-#define ANT_DEVICE_POWER_BATTERY            0x52
-#define ANT_DEVICE_POWER_PARAMS             0x02
-#define ANT_DEVICE_POWER_PARAMS_CRANK       0x01
-#define ANT_DEVICE_POWER_PARAMS_TORQUE      0x02
-
+//
 // Channel Responses
 
 #define ANT_DEVICE_HR_PREVIOUS              0x04
