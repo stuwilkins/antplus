@@ -27,7 +27,7 @@
 #include "antmessage.h"
 #include "debug.h"
 
-AntMessage::AntMessage(void) {
+ANTMessage::ANTMessage(void) {
     antType = 0x00;
     antChannel = 0x00;
     for (int i=0; i < MAX_MESSAGE_SIZE; i++) {
@@ -36,14 +36,14 @@ AntMessage::AntMessage(void) {
     antDataLen = 0;
 }
 
-AntMessage::AntMessage(uint8_t *data, int data_len)
-    : AntMessage() {
+ANTMessage::ANTMessage(uint8_t *data, int data_len)
+    : ANTMessage() {
     // Decode
     this->decode(data, data_len);
 }
 
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t *data, int len)
-    : AntMessage() {
+ANTMessage::ANTMessage(uint8_t type, uint8_t chan, uint8_t *data, int len)
+    : ANTMessage() {
     // Copy to internal structure
     antType = type;
     antChannel = chan;
@@ -54,24 +54,24 @@ AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t *data, int len)
     }
 }
 
-AntMessage::AntMessage(uint8_t type, uint8_t chan)
-    : AntMessage() {
+ANTMessage::ANTMessage(uint8_t type, uint8_t chan)
+    : ANTMessage() {
     antType = type;
     antChannel = chan;
     antDataLen = 0;
 }
 
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0)
-    : AntMessage() {
+ANTMessage::ANTMessage(uint8_t type, uint8_t chan, uint8_t b0)
+    : ANTMessage() {
     antType = type;
     antChannel = chan;
     antDataLen = 1;
     antData[0] = b0;
 }
 
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
+ANTMessage::ANTMessage(uint8_t type, uint8_t chan, uint8_t b0,
         uint8_t b1)
-    : AntMessage() {
+    : ANTMessage() {
     antType = type;
     antChannel = chan;
     antDataLen = 2;
@@ -79,9 +79,9 @@ AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
     antData[1] = b1;
 }
 
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
+ANTMessage::ANTMessage(uint8_t type, uint8_t chan, uint8_t b0,
         uint8_t b1, uint8_t b2)
-    : AntMessage() {
+    : ANTMessage() {
     antType = type;
     antChannel = chan;
     antDataLen = 3;
@@ -90,9 +90,9 @@ AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
     antData[2] = b2;
 }
 
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
+ANTMessage::ANTMessage(uint8_t type, uint8_t chan, uint8_t b0,
         uint8_t b1, uint8_t b2, uint8_t b3)
-    : AntMessage() {
+    : ANTMessage() {
     antType = type;
     antChannel = chan;
     antDataLen = 4;
@@ -102,9 +102,9 @@ AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
     antData[3] = b3;
 }
 
-AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
+ANTMessage::ANTMessage(uint8_t type, uint8_t chan, uint8_t b0,
         uint8_t b1, uint8_t b2, uint8_t b3, uint8_t b4)
-    : AntMessage() {
+    : ANTMessage() {
     antType = type;
     antChannel = chan;
     antDataLen = 5;
@@ -115,7 +115,7 @@ AntMessage::AntMessage(uint8_t type, uint8_t chan, uint8_t b0,
     antData[4] = b4;
 }
 
-int AntMessage::decode(uint8_t *data, int data_len) {
+int ANTMessage::decode(uint8_t *data, int data_len) {
     if (data_len < 5) {
         DEBUG_COMMENT("Data too short (< 5)\n");
         return ERROR_LEN;
@@ -173,7 +173,7 @@ int AntMessage::decode(uint8_t *data, int data_len) {
     return NOERROR;
 }
 
-void AntMessage::encode(uint8_t *msg, int *len) {
+void ANTMessage::encode(uint8_t *msg, int *len) {
     msg[0] = ANT_SYNC_BYTE;
     msg[1] = antDataLen + 1;
     msg[2] = antType;

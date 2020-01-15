@@ -77,7 +77,7 @@ class ANTDevice {
     ~ANTDevice(void);
 
     void addDatum(int i, ANTDeviceDatum val);
-    void parseMessage(AntMessage *message);
+    void parseMessage(ANTMessage *message);
 
     std::vector<ANTDeviceDatum>& getTsData(int i);
     ANTDeviceDatum getData(int i);
@@ -115,7 +115,7 @@ class ANTDeviceFEC : public ANTDevice {
         TRAINER_TARGET_POWER      = 10
     };
     ANTDeviceFEC(void);
-    void parseMessage(AntMessage *message);
+    void parseMessage(ANTMessage *message);
 
  private:
     uint8_t lastCommandSeq;
@@ -124,7 +124,7 @@ class ANTDeviceFEC : public ANTDevice {
 class ANTDevicePWR : public ANTDevice {
  public:
     ANTDevicePWR(void);
-    void parseMessage(AntMessage *message);
+    void parseMessage(ANTMessage *message);
 
  private:
     enum {
@@ -149,7 +149,7 @@ class ANTDevicePWR : public ANTDevice {
 class ANTDeviceHR : public ANTDevice {
  public:
     ANTDeviceHR(void);
-    void parseMessage(AntMessage *message);
+    void parseMessage(ANTMessage *message);
 
  private:
     enum {

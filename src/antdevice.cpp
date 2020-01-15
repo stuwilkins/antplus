@@ -95,7 +95,7 @@ ANTDeviceFEC::ANTDeviceFEC(void)
 }
 
 
-void ANTDeviceFEC::parseMessage(AntMessage *message) {
+void ANTDeviceFEC::parseMessage(ANTMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -211,7 +211,7 @@ ANTDevicePWR::ANTDevicePWR(void)
     valueNames.push_back("PEAK_TORQUE_THRESHOLD");
 }
 
-void ANTDevicePWR::parseMessage(AntMessage *message) {
+void ANTDevicePWR::parseMessage(ANTMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -303,7 +303,7 @@ ANTDeviceHR::ANTDeviceHR(void)
     valueNames.push_back("RR_INTERVAL");
 }
 
-void ANTDeviceHR::parseMessage(AntMessage *message) {
+void ANTDeviceHR::parseMessage(ANTMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();

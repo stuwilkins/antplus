@@ -38,7 +38,7 @@ using std::chrono::time_point;
 // using std::chrono::duration_cast;
 // using std::chrono::milliseconds;
 
-class AntMessage {
+class ANTMessage {
  public:
     enum {
         NOERROR = 0,
@@ -47,18 +47,18 @@ class AntMessage {
         ERROR_PROTO = -4
     };
 
-    AntMessage(void);
-    AntMessage(uint8_t *data, int data_len);
-    AntMessage(uint8_t type, uint8_t chan, uint8_t *data, int len);
-    AntMessage(uint8_t type, uint8_t *data, int len);
-    AntMessage(uint8_t type, uint8_t chan);
-    AntMessage(uint8_t type, uint8_t chan, uint8_t b0);
-    AntMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1);
-    AntMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1,
+    ANTMessage(void);
+    ANTMessage(uint8_t *data, int data_len);
+    ANTMessage(uint8_t type, uint8_t chan, uint8_t *data, int len);
+    ANTMessage(uint8_t type, uint8_t *data, int len);
+    ANTMessage(uint8_t type, uint8_t chan);
+    ANTMessage(uint8_t type, uint8_t chan, uint8_t b0);
+    ANTMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1);
+    ANTMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1,
             uint8_t b2);
-    AntMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1,
+    ANTMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1,
             uint8_t b2, uint8_t b3);
-    AntMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1,
+    ANTMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1,
             uint8_t b2, uint8_t b3, uint8_t b4);
 
     void       encode(uint8_t *msg, int *len);

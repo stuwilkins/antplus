@@ -273,7 +273,7 @@ int ANTUSB::bulkWrite(uint8_t *bytes, int size, int timeout) {
     return actualSize;
 }
 
-int ANTUSB::sendMessage(AntMessage *message) {
+int ANTUSB::sendMessage(ANTMessage *message) {
     int msg_len;
     uint8_t msg[MAX_MESSAGE_SIZE];
 
@@ -282,7 +282,7 @@ int ANTUSB::sendMessage(AntMessage *message) {
     return bulkWrite(msg, msg_len, writeTimeout);
 }
 
-int ANTUSB::readMessage(std::vector<AntMessage> *message) {
+int ANTUSB::readMessage(std::vector<ANTMessage> *message) {
     uint8_t bytes[MAX_MESSAGE_SIZE];
     int nbytes = bulkRead(bytes, MAX_MESSAGE_SIZE, readTimeout);
 
@@ -295,7 +295,7 @@ int ANTUSB::readMessage(std::vector<AntMessage> *message) {
             if (bytes[i] == ANT_SYNC_BYTE) {
                 // We have a message, second byte is length
                 uint8_t len = bytes[i+1] + 4;
-                message->push_back(AntMessage(&bytes[i], len));
+                message->push_back(ANTMessage(&bytes[i], len));
                 message->back().setTimestamp();
                 i += len;
             }
@@ -309,12 +309,12 @@ int ANTUSB::readMessage(std::vector<AntMessage> *message) {
 
 int ANTUSB::reset(void) {
     DEBUG_COMMENT("Sending ANT_SYSTEM_RESET\n");
-    AntMessage resetMessage(ANT_SYSTEM_RESET, 0);
+    ANTMessage resetMessage(ANT_SYSTEM_RESET, 0);
     sendMessage(&resetMessage);
 
     usleep(RESET_DURATION);
 
-    AntMessage reply;
+    ANTMessage reply;
     // readMessage(&reply);
     // reply.parse();
 
@@ -325,17 +325,17 @@ int ANTUSB::setNetworkKey(uint8_t net) {
     uint8_t key[] = ANT_NETWORK_KEY;
 
     DEBUG_COMMENT("Sending ANT_SET_NETWORK\n");
-    AntMessage netkey(ANT_SET_NETWORK, net, key, ANT_NETWORK_KEY_LEN);
+    ANTMessage netkey(ANT_SET_NETWORK, net, key, ANT_NETWORK_KEY_LEN);
     return sendMessage(&netkey);
 }
 
 int ANTUSB::assignChannel(uint8_t chanNum, bool master, uint8_t net) {
     DEBUG_COMMENT("Sending ANT_UNASSIGN_CHANNEL\n");
-    AntMessage unassign(ANT_UNASSIGN_CHANNEL, chanNum);
+    ANTMessage unassign(ANT_UNASSIGN_CHANNEL, chanNum);
     sendMessage(&unassign);
 
     DEBUG_COMMENT("Sending ANT_ASSIGN_CHANNEL\n");
-    AntMessage assign(ANT_ASSIGN_CHANNEL, chanNum,
+    ANTMessage assign(ANT_ASSIGN_CHANNEL, chanNum,
             master ? CHANNEL_TYPE_TX : CHANNEL_TYPE_RX, net);
     return sendMessage(&assign);
 }
@@ -343,7 +343,7 @@ int ANTUSB::assignChannel(uint8_t chanNum, bool master, uint8_t net) {
 int ANTUSB::setChannelID(uint8_t chan, uint16_t device,
         uint8_t type, bool master) {
     DEBUG_COMMENT("Sending ANT_CHANNEL_ID\n");
-    AntMessage setid(ANT_CHANNEL_ID, chan,
+    ANTMessage setid(ANT_CHANNEL_ID, chan,
             (uint8_t)(device & 0xFF), (uint8_t)(device>>8),
             type, master ? ANT_TX_TYPE_MASTER : ANT_TX_TYPE_SLAVE);
 
@@ -355,40 +355,40 @@ int ANTUSB::setSearchTimeout(uint8_t chan, uint8_t timeout) {
 
     DEBUG_COMMENT("Sending ANT_SEARCH_TIMEOUT\n");
 
-    AntMessage hpTimeout(ANT_SEARCH_TIMEOUT, chan, 0);
+    ANTMessage hpTimeout(ANT_SEARCH_TIMEOUT, chan, 0);
     if (!(rc = sendMessage(&hpTimeout))) {
         return rc;
     }
 
     DEBUG_COMMENT("Sending ANT_LP_SEARCH_TIMEOUT\n");
-    AntMessage lpTimeout(ANT_LP_SEARCH_TIMEOUT, chan, timeout);
+    ANTMessage lpTimeout(ANT_LP_SEARCH_TIMEOUT, chan, timeout);
     return sendMessage(&lpTimeout);
 }
 
 int ANTUSB::setChannelPeriod(uint8_t chan, uint16_t period) {
     DEBUG_COMMENT("Sending ANT_CHANNEL_PERIOD\n");
-    AntMessage chanPeriod(ANT_CHANNEL_PERIOD, chan,
+    ANTMessage chanPeriod(ANT_CHANNEL_PERIOD, chan,
             period & 0xFF, (period >> 8) & 0xFF);
     return sendMessage(&chanPeriod);
 }
 
 int ANTUSB::setChannelFreq(uint8_t chan, uint8_t frequency) {
     DEBUG_COMMENT("Sending ANT_CHANNEL_FREQUENCY\n");
-    AntMessage chanFreq(ANT_CHANNEL_FREQUENCY, chan, frequency);
+    ANTMessage chanFreq(ANT_CHANNEL_FREQUENCY, chan, frequency);
     return sendMessage(&chanFreq);
 }
 
 int ANTUSB::setLibConfig(uint8_t chan, uint8_t config) {
     DEBUG_COMMENT("Sending ANT_LIB_CONFIG\n");
     (void)chan;  // Ignore channel ....
-    AntMessage libConfig(ANT_LIB_CONFIG, 0x00, config);
+    ANTMessage libConfig(ANT_LIB_CONFIG, 0x00, config);
     return sendMessage(&libConfig);
 }
 
 int ANTUSB::requestDataPage(uint8_t chan, uint8_t page) {
     DEBUG_COMMENT("Sending ANT_ACK_DATA for \"Request Data Page\"\n");
     uint8_t req[8] = { 0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x81, page, 0x01};
-    AntMessage request(ANT_ACK_DATA, chan, req, sizeof(req));
+    ANTMessage request(ANT_ACK_DATA, chan, req, sizeof(req));
     return sendMessage(&request);
 }
 
@@ -400,13 +400,13 @@ int ANTUSB::openChannel(uint8_t chan) {
     }
 
     DEBUG_COMMENT("Sending ANT_OPEN_CHANNEL\n");
-    AntMessage open(ANT_OPEN_CHANNEL, chan);
+    ANTMessage open(ANT_OPEN_CHANNEL, chan);
     return sendMessage(&open);
 }
 
 int ANTUSB::requestMessage(uint8_t chan, uint8_t message) {
     DEBUG_PRINT("Sending ANT_REQ_MESSAGE 0x%02X\n", message);
-    AntMessage req(ANT_REQ_MESSAGE, chan, message);
+    ANTMessage req(ANT_REQ_MESSAGE, chan, message);
     return sendMessage(&req);
 }
 
@@ -476,7 +476,7 @@ void* antusb_listener(void *ctx) {
     DEBUG_COMMENT("Started Listener Loop ....\n");
 
     while (antusb->getThreadRun()) {
-        std::vector<AntMessage> message;
+        std::vector<ANTMessage> message;
         antusb->readMessage(&message);
         for (auto & m : message) {
             switch (m.getType()) {
@@ -581,7 +581,7 @@ int ANTUSB::channelStart(uint8_t chan, int type,
     return NOERROR;
 }
 
-int ANTUSB::channelProcessID(AntMessage *m) {
+int ANTUSB::channelProcessID(ANTMessage *m) {
     // Parse the ID
     uint16_t id;
     uint8_t type;
@@ -598,7 +598,7 @@ int ANTUSB::channelProcessID(AntMessage *m) {
     return NOERROR;
 }
 
-int ANTUSB::channelProcessEvent(AntMessage *m) {
+int ANTUSB::channelProcessEvent(ANTMessage *m) {
     // 2nd Byte is event code
     uint8_t chan = m->getChannel();
     uint8_t commandCode = m->getData(0);
@@ -667,7 +667,7 @@ int ANTUSB::channelProcessEvent(AntMessage *m) {
     return NOERROR;
 }
 
-int ANTUSB::channelProcessBroadcast(AntMessage *m) {
+int ANTUSB::channelProcessBroadcast(ANTMessage *m) {
     // Parse the ID
     uint8_t chan = m->getChannel();
     switch (getChannel(chan)->getType()) {

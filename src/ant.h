@@ -62,8 +62,8 @@ class ANTUSB {
     int close(void);
     int bulkRead(uint8_t *bytes, int size, int timeout);
     int bulkWrite(uint8_t *bytes, int size, int timeout);
-    int sendMessage(AntMessage *message);
-    int readMessage(std::vector<AntMessage> *message);
+    int sendMessage(ANTMessage *message);
+    int readMessage(std::vector<ANTMessage> *message);
     int reset(void);
     int setNetworkKey(uint8_t net);
     int assignChannel(uint8_t chanNum, bool master, uint8_t net);
@@ -79,9 +79,9 @@ class ANTUSB {
     int startThreads(void);
     int stopThreads(void);
     int changeStateTo(int state);
-    int channelProcessID(AntMessage *m);
-    int channelProcessEvent(AntMessage *m);
-    int channelProcessBroadcast(AntMessage *m);
+    int channelProcessID(ANTMessage *m);
+    int channelProcessEvent(ANTMessage *m);
+    int channelProcessBroadcast(ANTMessage *m);
     int channelChangeStateTo(uint8_t chan, int state);
     int channelStart(uint8_t chan, int type,
             uint16_t id = 0x0000, bool wait = true);
