@@ -28,21 +28,21 @@
 #include "antdevice.h"
 #include "debug.h"
 
-AntDevice::AntDevice(void) {
+ANTDevice::ANTDevice(void) {
     nValues = 0;
     tsData = nullptr;
     data   = nullptr;
 }
 
-AntDevice::AntDevice(int n)
-    : AntDevice() {
+ANTDevice::ANTDevice(int n)
+    : ANTDevice() {
     // Create the list of values
     nValues += n;
-    tsData = new std::vector<AntDeviceDatum>[nValues];
-    data   = new AntDeviceDatum[nValues];
+    tsData = new std::vector<ANTDeviceDatum>[nValues];
+    data   = new ANTDeviceDatum[nValues];
 }
 
-AntDevice::~AntDevice(void) {
+ANTDevice::~ANTDevice(void) {
     if (tsData != nullptr) {
         delete [] tsData;
     }
@@ -51,33 +51,33 @@ AntDevice::~AntDevice(void) {
     }
 }
 
-AntDeviceParams AntDevice::params[] = {
-    {  AntDevice::TYPE_HR,   0x78, 0x1F86, 0x39 },
-    {  AntDevice::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
-    {  AntDevice::TYPE_FEC,  0x11, 0x2000, 0x39 },
-    {  AntDevice::TYPE_PAIR, 0x00, 0x0000, 0x39 },
-    {  AntDevice::TYPE_NONE, 0x00, 0x0000, 0x00 }
+ANTDeviceParams ANTDevice::params[] = {
+    {  ANTDevice::TYPE_HR,   0x78, 0x1F86, 0x39 },
+    {  ANTDevice::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
+    {  ANTDevice::TYPE_FEC,  0x11, 0x2000, 0x39 },
+    {  ANTDevice::TYPE_PAIR, 0x00, 0x0000, 0x39 },
+    {  ANTDevice::TYPE_NONE, 0x00, 0x0000, 0x00 }
 };
 
-void AntDevice::addDatum(int i, AntDeviceDatum val) {
+void ANTDevice::addDatum(int i, ANTDeviceDatum val) {
     tsData[i].push_back(val);
     data[i] = val;
 }
 
-std::vector<AntDeviceDatum>& AntDevice::getTsData(int i) {
+std::vector<ANTDeviceDatum>& ANTDevice::getTsData(int i) {
     return tsData[i];
 }
 
-AntDeviceDatum AntDevice::getData(int i) {
+ANTDeviceDatum ANTDevice::getData(int i) {
     return data[i];
 }
 
-std::string AntDevice::getDeviceName(void) {
+std::string ANTDevice::getDeviceName(void) {
     return deviceName;
 }
 
-AntDeviceFEC::AntDeviceFEC(void)
-     : AntDevice(11) {
+ANTDeviceFEC::ANTDeviceFEC(void)
+     : ANTDevice(11) {
     deviceName = std::string("FE-C");
     valueNames.push_back("GENERAL_INST_SPEED");
     valueNames.push_back("SETTINGS_CYCLE_LENGTH");
@@ -95,7 +95,7 @@ AntDeviceFEC::AntDeviceFEC(void)
 }
 
 
-void AntDeviceFEC::parseMessage(AntMessage *message) {
+void ANTDeviceFEC::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -111,7 +111,7 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
         _instSpeed |= (data[5] << 8);
         float instSpeed = (float)_instSpeed * 0.001;
 
-        addDatum(GENERAL_INST_SPEED, AntDeviceDatum(instSpeed, ts));
+        addDatum(GENERAL_INST_SPEED, ANTDeviceDatum(instSpeed, ts));
 
         DEBUG_PRINT("FE-C General, %f\n", instSpeed);
 
@@ -123,9 +123,9 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
         float incline = (float)_incline * 0.01;
         float resistance = (float)data[6] * 0.5;
 
-        addDatum(SETTINGS_CYCLE_LENGTH, AntDeviceDatum(cycleLength, ts));
-        addDatum(SETTINGS_RESISTANCE, AntDeviceDatum(resistance, ts));
-        addDatum(SETTINGS_INCLINE, AntDeviceDatum(incline, ts));
+        addDatum(SETTINGS_CYCLE_LENGTH, ANTDeviceDatum(cycleLength, ts));
+        addDatum(SETTINGS_RESISTANCE, ANTDeviceDatum(resistance, ts));
+        addDatum(SETTINGS_INCLINE, ANTDeviceDatum(incline, ts));
 
         DEBUG_PRINT("FE-C General Data, %f, %f, %f\n",
                 cycleLength, resistance, incline);
@@ -141,11 +141,11 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
         uint8_t trainerStatus = (data[6] >> 4);
         uint8_t trainerFlags = data[7] & 0x0F;
 
-        addDatum(TRAINER_CADENCE, AntDeviceDatum((float)cadence, ts));
-        addDatum(TRAINER_ACC_POWER, AntDeviceDatum((float)accPower, ts));
-        addDatum(TRAINER_INST_POWER, AntDeviceDatum((float)instPower, ts));
-        addDatum(TRAINER_STATUS, AntDeviceDatum((float)trainerStatus, ts));
-        addDatum(TRAINER_FLAGS, AntDeviceDatum((float)trainerFlags, ts));
+        addDatum(TRAINER_CADENCE, ANTDeviceDatum((float)cadence, ts));
+        addDatum(TRAINER_ACC_POWER, ANTDeviceDatum((float)accPower, ts));
+        addDatum(TRAINER_INST_POWER, ANTDeviceDatum((float)instPower, ts));
+        addDatum(TRAINER_STATUS, ANTDeviceDatum((float)trainerStatus, ts));
+        addDatum(TRAINER_FLAGS, ANTDeviceDatum((float)trainerFlags, ts));
 
         DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d, 0x%02X, 0x%02X\n",
                 cadence, accPower, instPower, trainerStatus, trainerFlags);
@@ -162,7 +162,7 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
                     float resistance = (float)data[7] * 0.5;
 
                     addDatum(TRAINER_TARGET_RESISTANCE,
-                            AntDeviceDatum(resistance, ts));
+                            ANTDeviceDatum(resistance, ts));
 
                     DEBUG_PRINT("FE-C Target Resistance, %f, %d\n",
                             resistance, commandSeq);
@@ -174,7 +174,7 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
                     float pwr = _pwr * 0.25;
 
                     addDatum(TRAINER_TARGET_POWER,
-                            AntDeviceDatum(pwr, ts));
+                            ANTDeviceDatum(pwr, ts));
 
                     DEBUG_PRINT("FE-C Target Power, %f, %d\n",
                             pwr, commandSeq);
@@ -191,8 +191,8 @@ void AntDeviceFEC::parseMessage(AntMessage *message) {
     }
 }
 
-AntDevicePWR::AntDevicePWR(void)
-    : AntDevice(15) {
+ANTDevicePWR::ANTDevicePWR(void)
+    : ANTDevice(15) {
     deviceName = std::string("POWER");
     valueNames.push_back("BALANCE");
     valueNames.push_back("CADENCE");
@@ -211,7 +211,7 @@ AntDevicePWR::AntDevicePWR(void)
     valueNames.push_back("PEAK_TORQUE_THRESHOLD");
 }
 
-void AntDevicePWR::parseMessage(AntMessage *message) {
+void ANTDevicePWR::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -226,18 +226,18 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
         if ((balance & 0x80) && (balance != 0xFF)) {
             // We have balance data
             balance = balance & 0x7F;
-            addDatum(BALANCE, AntDeviceDatum(balance, ts));
+            addDatum(BALANCE, ANTDeviceDatum(balance, ts));
         }
         uint8_t cadence = data[3];
-        addDatum(CADENCE, AntDeviceDatum(cadence, ts));
+        addDatum(CADENCE, ANTDeviceDatum(cadence, ts));
 
         uint16_t accPower = data[4];
         accPower |= (data[5] << 8);
-        addDatum(ACC_POWER, AntDeviceDatum(accPower, ts));
+        addDatum(ACC_POWER, ANTDeviceDatum(accPower, ts));
 
         uint16_t instPower = data[6];
         instPower |= (data[7] << 8);
-        addDatum(INST_POWER, AntDeviceDatum(instPower, ts));
+        addDatum(INST_POWER, ANTDeviceDatum(instPower, ts));
 
         DEBUG_PRINT("POWER Standard, %d, %d, %d, %d\n", balance, cadence,
                 accPower, instPower);
@@ -247,10 +247,10 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
         float leftPS = (float)data[4] * 0.5;
         float rightPS = (float)data[5] * 0.5;
 
-        addDatum(LEFT_TE, AntDeviceDatum(leftTE, ts));
-        addDatum(RIGHT_TE, AntDeviceDatum(rightTE, ts));
-        addDatum(LEFT_PS, AntDeviceDatum(leftPS, ts));
-        addDatum(RIGHT_PS, AntDeviceDatum(rightPS, ts));
+        addDatum(LEFT_TE, ANTDeviceDatum(leftTE, ts));
+        addDatum(RIGHT_TE, ANTDeviceDatum(rightTE, ts));
+        addDatum(LEFT_PS, ANTDeviceDatum(leftPS, ts));
+        addDatum(RIGHT_PS, ANTDeviceDatum(rightPS, ts));
         DEBUG_PRINT("POWER TEPS, %f, %f, %f, %f\n", leftTE, rightTE,
                 leftPS, rightPS);
     } else if (data[0] == ANT_DEVICE_POWER_BATTERY) {
@@ -260,9 +260,9 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
         operatingTime |= (data[5] << 16);
         uint8_t batteryVoltage = data[6];
 
-        addDatum(N_BATTERIES, AntDeviceDatum(nBatteries, ts));
-        addDatum(OPERATING_TIME, AntDeviceDatum(operatingTime, ts));
-        addDatum(BATTERY_VOLTAGE, AntDeviceDatum(batteryVoltage, ts));
+        addDatum(N_BATTERIES, ANTDeviceDatum(nBatteries, ts));
+        addDatum(OPERATING_TIME, ANTDeviceDatum(operatingTime, ts));
+        addDatum(BATTERY_VOLTAGE, ANTDeviceDatum(batteryVoltage, ts));
 
         DEBUG_PRINT("POWER Battery, %d, %d, %d\n", nBatteries,
                 operatingTime, batteryVoltage);
@@ -274,13 +274,13 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
             uint8_t sensorStatus = (data[6] >> 3) & 0x01;
             DEBUG_PRINT("POWER Params Crank, %f, %d, %d\n",
                     crankLength, crankStatus, sensorStatus);
-            addDatum(CRANK_LENGTH, AntDeviceDatum(crankLength, ts));
-            addDatum(CRANK_STATUS, AntDeviceDatum(crankStatus, ts));
-            addDatum(SENSOR_STATUS, AntDeviceDatum(sensorStatus, ts));
+            addDatum(CRANK_LENGTH, ANTDeviceDatum(crankLength, ts));
+            addDatum(CRANK_STATUS, ANTDeviceDatum(crankStatus, ts));
+            addDatum(SENSOR_STATUS, ANTDeviceDatum(sensorStatus, ts));
         } else if (data[1] == ANT_DEVICE_POWER_PARAMS_TORQUE) {
             float peakTorqueThresh = (float)data[7] * 0.5;
             addDatum(PEAK_TORQUE_THRESHOLD,
-                    AntDeviceDatum(peakTorqueThresh, ts));
+                    ANTDeviceDatum(peakTorqueThresh, ts));
             DEBUG_PRINT("POWER Params Torque, %f\n", peakTorqueThresh);
         } else {
             DEBUG_COMMENT("Unknown power Paramaters Page\n");
@@ -290,8 +290,8 @@ void AntDevicePWR::parseMessage(AntMessage *message) {
     }
 }
 
-AntDeviceHR::AntDeviceHR(void)
-     : AntDevice(2) {
+ANTDeviceHR::ANTDeviceHR(void)
+     : ANTDevice(2) {
     hbEventTime = 0;
     previousHbEventTime = 0;
     hbCount = 0;
@@ -303,7 +303,7 @@ AntDeviceHR::AntDeviceHR(void)
     valueNames.push_back("RR_INTERVAL");
 }
 
-void AntDeviceHR::parseMessage(AntMessage *message) {
+void ANTDeviceHR::parseMessage(AntMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -331,14 +331,14 @@ void AntDeviceHR::parseMessage(AntMessage *message) {
 
     lastToggleBit = toggleBit;
 
-    addDatum(HEARTRATE, AntDeviceDatum(heartRate, ts));
+    addDatum(HEARTRATE, ANTDeviceDatum(heartRate, ts));
 
     if ((data[0] & 0x7F)  == ANT_DEVICE_HR_PREVIOUS) {
         previousHbEventTime = data[2];
         previousHbEventTime |= (data[3] << 8);
         float rrInterval = (hbEventTime - previousHbEventTime);
         rrInterval *= (1000 / 1024);
-        addDatum(RR_INTERVAL, AntDeviceDatum(rrInterval, ts));
+        addDatum(RR_INTERVAL, ANTDeviceDatum(rrInterval, ts));
         DEBUG_PRINT("HR Previous, %d, %d, %f\n", previousHbEventTime,
                 hbEventTime, rrInterval);
     } else {

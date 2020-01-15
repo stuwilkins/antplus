@@ -30,7 +30,7 @@
 #include <set>
 #include "antdevice.h"
 
-class AntChannel {
+class ANTChannel {
  public:
     enum {
         // The return values
@@ -53,8 +53,8 @@ class AntChannel {
         STATE_CLOSED         = 9
     };
 
-    AntChannel(void);
-    explicit AntChannel(int type);
+    ANTChannel(void);
+    explicit ANTChannel(int type);
     void setType(int t);
 
     uint8_t    getNetwork(void)         { return network; }
@@ -71,10 +71,10 @@ class AntChannel {
     void       setState(int state);
     void       addDeviceId(uint16_t devid);
 
-    AntDevice*    getDevice(void);
-    AntDeviceFEC* getDeviceFEC(void)    { return &deviceFEC; }
-    AntDeviceHR*  getDeviceHR(void)     { return &deviceHR; }
-    AntDevicePWR* getDevicePWR(void)    { return &devicePWR; }
+    ANTDevice*    getDevice(void);
+    ANTDeviceFEC* getDeviceFEC(void)    { return &deviceFEC; }
+    ANTDeviceHR*  getDeviceHR(void)     { return &deviceHR; }
+    ANTDevicePWR* getDevicePWR(void)    { return &devicePWR; }
 
  private:
     uint8_t  network;
@@ -87,9 +87,9 @@ class AntChannel {
     uint8_t  searchTimeout;
     std::set<uint16_t> deviceIdSet;
     int          type;
-    AntDeviceFEC deviceFEC;
-    AntDeviceHR  deviceHR;
-    AntDevicePWR devicePWR;
+    ANTDeviceFEC deviceFEC;
+    ANTDeviceHR  deviceHR;
+    ANTDevicePWR devicePWR;
 };
 
 #endif  // SRC_ANTCHANNEL_H_

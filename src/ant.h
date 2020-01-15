@@ -27,7 +27,6 @@
 #ifndef SRC_ANT_H_
 #define SRC_ANT_H_
 
-
 #include <unistd.h>
 #include <stdint.h>
 #include <pthread.h>
@@ -51,14 +50,14 @@ extern const char* ANT_GIT_VERSION;
 void* antusb_listener(void *ctx);
 void* antusb_poller(void *ctx);
 
-class AntUsb {
+class ANTUSB {
  public:
     enum rtn {
         NOERROR = 0,
         ERROR = -1
     };
-    AntUsb(void);
-    ~AntUsb(void);
+    ANTUSB(void);
+    ~ANTUSB(void);
     int open(void);
     int close(void);
     int bulkRead(uint8_t *bytes, int size, int timeout);
@@ -86,7 +85,7 @@ class AntUsb {
     int channelChangeStateTo(uint8_t chan, int state);
     int channelStart(uint8_t chan, int type,
             uint16_t id = 0x0000, bool wait = true);
-    AntChannel *getChannel(uint8_t chan) {
+    ANTChannel *getChannel(uint8_t chan) {
         return &(antChannel[chan]);
     }
     int  getNumChannels(void) { return numChannels; }
@@ -107,7 +106,7 @@ class AntUsb {
      int readTimeout;
      int writeTimeout;
      int numChannels;
-     AntChannel *antChannel;
+     ANTChannel *antChannel;
      pthread_t listenerId;
      pthread_t pollerId;
      bool threadRun;

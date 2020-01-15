@@ -34,19 +34,19 @@ using std::chrono::milliseconds;
 #include <chrono>
 #include <string>
 
-struct AntDeviceParams {
+struct ANTDeviceParams {
     int type;
     uint8_t deviceType;
     uint16_t devicePeriod;
     uint8_t deviceFrequency;
 };
 
-class AntDeviceDatum {
+class ANTDeviceDatum {
  public:
-    AntDeviceDatum(void) {
+    ANTDeviceDatum(void) {
         value = 0;
     }
-    AntDeviceDatum(float v, time_point<Clock> t) {
+    ANTDeviceDatum(float v, time_point<Clock> t) {
         setDatum(v, t);
     }
     void setDatum(float v, time_point<Clock> t) {
@@ -60,7 +60,7 @@ class AntDeviceDatum {
     time_point<Clock> ts;
 };
 
-class AntDevice {
+class ANTDevice {
  public:
     enum {
         // The channel types
@@ -70,17 +70,17 @@ class AntDevice {
         TYPE_FEC  = 3,
         TYPE_PAIR = 4
     };
-    static AntDeviceParams params[5];
+    static ANTDeviceParams params[5];
 
-    AntDevice(void);
-    explicit AntDevice(int nMeas);
-    ~AntDevice(void);
+    ANTDevice(void);
+    explicit ANTDevice(int nMeas);
+    ~ANTDevice(void);
 
-    void addDatum(int i, AntDeviceDatum val);
+    void addDatum(int i, ANTDeviceDatum val);
     void parseMessage(AntMessage *message);
 
-    std::vector<AntDeviceDatum>& getTsData(int i);
-    AntDeviceDatum getData(int i);
+    std::vector<ANTDeviceDatum>& getTsData(int i);
+    ANTDeviceDatum getData(int i);
     std::string getDeviceName(void);
     std::vector<std::string>& getValueNames(void) { return valueNames; }
     int                       getNumValues(void)  { return nValues; }
@@ -90,8 +90,8 @@ class AntDevice {
     //     // DATA From Common Pages
     // }
     int nValues;
-    AntDeviceDatum *data;
-    std::vector<AntDeviceDatum> *tsData;
+    ANTDeviceDatum *data;
+    std::vector<ANTDeviceDatum> *tsData;
 
  protected:
     std::vector<std::string> valueNames;
@@ -99,7 +99,7 @@ class AntDevice {
     std::string deviceName;
 };
 
-class AntDeviceFEC : public AntDevice {
+class ANTDeviceFEC : public ANTDevice {
  public:
     enum {
         GENERAL_INST_SPEED        = 0,
@@ -114,16 +114,16 @@ class AntDeviceFEC : public AntDevice {
         TRAINER_TARGET_RESISTANCE = 9,
         TRAINER_TARGET_POWER      = 10
     };
-    AntDeviceFEC(void);
+    ANTDeviceFEC(void);
     void parseMessage(AntMessage *message);
 
  private:
     uint8_t lastCommandSeq;
 };
 
-class AntDevicePWR : public AntDevice {
+class ANTDevicePWR : public ANTDevice {
  public:
-    AntDevicePWR(void);
+    ANTDevicePWR(void);
     void parseMessage(AntMessage *message);
 
  private:
@@ -146,9 +146,9 @@ class AntDevicePWR : public AntDevice {
     };
 };
 
-class AntDeviceHR : public AntDevice {
+class ANTDeviceHR : public ANTDevice {
  public:
-    AntDeviceHR(void);
+    ANTDeviceHR(void);
     void parseMessage(AntMessage *message);
 
  private:

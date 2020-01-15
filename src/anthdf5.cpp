@@ -47,7 +47,7 @@ void signalHandler(int signum) {
     stop = true;
 }
 
-int write_data(AntUsb *antusb, std::string filename) {
+int write_data(ANTUSB *antusb, std::string filename) {
     H5::H5File file(filename, H5F_ACC_TRUNC);
 
     file.createGroup("/DATA");
@@ -55,8 +55,8 @@ int write_data(AntUsb *antusb, std::string filename) {
 
     // Cycle through each channel
     for (int i=0; i < antusb->getNumChannels(); i++) {
-        AntChannel *chan = antusb->getChannel(i);
-        AntDevice *dev = chan->getDevice();
+        ANTChannel *chan = antusb->getChannel(i);
+        ANTDevice *dev = chan->getDevice();
         if (dev != nullptr) {
             std::string devName = dev->getDeviceName() + '_';
             devName = devName + std::to_string(chan->getDeviceID());
@@ -130,7 +130,7 @@ int write_data(AntUsb *antusb, std::string filename) {
     return 0;
 }
 
-int read_config(AntUsb *usb, std::string filename) {
+int read_config(ANTUSB *usb, std::string filename) {
     libconfig::Config cfg;
 
     // Read the file. If there is an error, report it and exit.
@@ -183,7 +183,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-    AntUsb antusb;
+    ANTUSB antusb;
 
     if (antusb.open()) {
         return -127;
@@ -197,10 +197,10 @@ int main(int argc, char *argv[]) {
 
     antusb.setNetworkKey(0);
 
-    antusb.channelStart(0, AntDevice::TYPE_HR, 0x01E5);
-    antusb.channelStart(1, AntDevice::TYPE_PWR, 0xD42D);
-    antusb.channelStart(2, AntDevice::TYPE_PWR, 0x635E);
-    antusb.channelStart(3, AntDevice::TYPE_FEC, 0x635E);
+    antusb.channelStart(0, ANTDevice::TYPE_HR, 0x01E5);
+    antusb.channelStart(1, ANTDevice::TYPE_PWR, 0xD42D);
+    antusb.channelStart(2, ANTDevice::TYPE_PWR, 0x635E);
+    antusb.channelStart(3, ANTDevice::TYPE_FEC, 0x635E);
 
     signal(SIGINT, signalHandler);
     while (!stop) {

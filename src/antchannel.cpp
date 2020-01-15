@@ -30,7 +30,7 @@
 #include "antchannel.h"
 #include "debug.h"
 
-AntChannel::AntChannel(void) {
+ANTChannel::ANTChannel(void) {
     master = false;
     network = 0x00;
     deviceType = 0x00;
@@ -42,46 +42,46 @@ AntChannel::AntChannel(void) {
     // The state of this channel
     currentState = STATE_IDLE;
 
-    type      = AntDevice::TYPE_NONE;
+    type      = ANTDevice::TYPE_NONE;
 }
 
-AntChannel::AntChannel(int type)
-    : AntChannel() {
+ANTChannel::ANTChannel(int type)
+    : ANTChannel() {
     setType(type);
 }
 
-void AntChannel::setType(int t) {
+void ANTChannel::setType(int t) {
     type = t;
 
     int i = 0;
-    while (AntDevice::params[i].type != AntDevice::TYPE_NONE) {
-        if (AntDevice::params[i].type == type) {
-            deviceType = AntDevice::params[i].deviceType;
-            devicePeriod = AntDevice::params[i].devicePeriod;
-            deviceFrequency = AntDevice::params[i].deviceFrequency;
+    while (ANTDevice::params[i].type != ANTDevice::TYPE_NONE) {
+        if (ANTDevice::params[i].type == type) {
+            deviceType = ANTDevice::params[i].deviceType;
+            devicePeriod = ANTDevice::params[i].devicePeriod;
+            deviceFrequency = ANTDevice::params[i].deviceFrequency;
             break;
         }
         i++;
     }
 }
 
-void AntChannel::setState(int state) {
+void ANTChannel::setState(int state) {
     currentState = state;
 }
 
-void AntChannel::addDeviceId(uint16_t devid) {
+void ANTChannel::addDeviceId(uint16_t devid) {
     deviceIdSet.insert(devid);
 }
 
-AntDevice* AntChannel::getDevice(void) {
+ANTDevice* ANTChannel::getDevice(void) {
     switch (type) {
-        case AntDevice::TYPE_HR:
+        case ANTDevice::TYPE_HR:
             return &deviceHR;
             break;
-        case AntDevice::TYPE_PWR:
+        case ANTDevice::TYPE_PWR:
             return &devicePWR;
             break;
-        case AntDevice::TYPE_FEC:
+        case ANTDevice::TYPE_FEC:
             return &deviceFEC;
             break;
     }
