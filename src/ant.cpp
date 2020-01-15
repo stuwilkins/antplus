@@ -230,6 +230,8 @@ int ANTUSB::close(void) {
     if (usb_ctx != NULL) {
         libusb_exit(usb_ctx);
     }
+
+    return NOERROR;
 }
 
 int ANTUSB::bulkRead(uint8_t *bytes, int size, int timeout) {
@@ -300,8 +302,6 @@ int ANTUSB::readMessage(std::vector<ANTMessage> *message) {
                 i += len;
             }
         }
-        // message->setTimestamp();
-        // message->decode(bytes, nbytes);
     }
 
     return nbytes;
@@ -414,10 +414,10 @@ int ANTUSB::startThreads(void) {
     threadRun = true;
 
     DEBUG_COMMENT("Starting listener thread ...\n");
-    pthread_create(&listenerId, NULL, antusb_listener, (void *)this);
+    pthread_create(&listenerId, NULL, callListenerThread, (void *)this);
 
     DEBUG_COMMENT("Starting poller thread ...\n");
-    pthread_create(&pollerId, NULL, antusb_poller, (void *)this);
+    pthread_create(&pollerId, NULL, callPollerThread, (void *)this);
     return NOERROR;
 }
 
@@ -433,14 +433,12 @@ int ANTUSB::stopThreads(void) {
     return NOERROR;
 }
 
-void* antusb_poller(void *ctx) {
-    ANTUSB *antusb = (ANTUSB*) ctx;
-
+void* ANTUSB::pollerThread(void) {
     DEBUG_COMMENT("Started Listener Loop ....\n");
 
     time_point<Clock> pollStart = Clock::now();
 
-    while (antusb->getThreadRun()) {
+    while (threadRun) {
         time_point<Clock> now = Clock::now();
 
         auto poll = std::chrono::duration_cast
@@ -448,16 +446,16 @@ void* antusb_poller(void *ctx) {
 
         // DEBUG_PRINT("poll = %ld\n", poll.count());
 
-        if (poll.count() >= antusb->getPollTime()) {
-            for (int r=0; r < antusb->getNumChannels(); r++) {
-                ANTChannel *chan = antusb->getChannel(r);
+        if (poll.count() >= getPollTime()) {
+            for (int r=0; r < getNumChannels(); r++) {
+                ANTChannel *chan = getChannel(r);
 
                 int state = chan->getState();
                 if ((state == ANTChannel::STATE_OPEN_UNPAIRED) ||
                         (state == ANTChannel::STATE_OPEN_PAIRED)) {
                     if (chan->getType() == ANTDevice::TYPE_FEC) {
                         // We need to send requests
-                        antusb->requestDataPage(r, ANT_DEVICE_COMMON_STATUS);
+                        requestDataPage(r, ANT_DEVICE_COMMON_STATUS);
                         pollStart = Clock::now();
                     }
                 }
@@ -467,34 +465,32 @@ void* antusb_poller(void *ctx) {
         }
     }
 
-    pthread_exit(NULL);
     return NULL;
 }
 
-void* antusb_listener(void *ctx) {
-    ANTUSB *antusb = (ANTUSB*) ctx;
+void* ANTUSB::listenerThread(void) {
     DEBUG_COMMENT("Started Listener Loop ....\n");
 
-    while (antusb->getThreadRun()) {
+    while (threadRun) {
         std::vector<ANTMessage> message;
-        antusb->readMessage(&message);
+        readMessage(&message);
         for (auto & m : message) {
             switch (m.getType()) {
                 case ANT_NOTIF_STARTUP:
                     DEBUG_COMMENT("RESET OK\n");
                     break;
                 case ANT_CHANNEL_EVENT:
-                    antusb->channelProcessEvent(&m);
+                    channelProcessEvent(&m);
                     break;
                 case ANT_CHANNEL_ID:
-                    antusb->channelProcessID(&m);
+                    channelProcessID(&m);
                     break;
                 case ANT_BROADCAST_DATA:
-                    antusb->channelProcessBroadcast(&m);
+                    channelProcessBroadcast(&m);
                     break;
                 case ANT_ACK_DATA:
                     // We process these the same as broadcasts
-                    antusb->channelProcessBroadcast(&m);
+                    channelProcessBroadcast(&m);
                     break;
                 default:
                     DEBUG_PRINT("Unable to process ... type = 0x%02X\n",
@@ -504,7 +500,6 @@ void* antusb_listener(void *ctx) {
         }
     }
 
-    pthread_exit(NULL);
     return NULL;
 }
 

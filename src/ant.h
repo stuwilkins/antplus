@@ -47,9 +47,6 @@ extern const char* ANT_GIT_REV;
 extern const char* ANT_GIT_BRANCH;
 extern const char* ANT_GIT_VERSION;
 
-void* antusb_listener(void *ctx);
-void* antusb_poller(void *ctx);
-
 class ANTUSB {
  public:
     enum rtn {
@@ -89,7 +86,6 @@ class ANTUSB {
         return &(antChannel[chan]);
     }
     int  getNumChannels(void) { return numChannels; }
-    bool getThreadRun(void)   { return threadRun; }
     int  getPollTime(void)    { return pollTime; }
     void setPollTime(int t)   { pollTime = t; }
     time_point<Clock> getStartTime(void) { return startTime; }
@@ -98,20 +94,29 @@ class ANTUSB {
     time_point<Clock> startTime;
 
  private:
-     libusb_context *usb_ctx;
-     libusb_device_handle *usb_handle;
-     libusb_config_descriptor *usb_config;
-     int readEndpoint;
-     int writeEndpoint;
-     int readTimeout;
-     int writeTimeout;
-     int numChannels;
-     ANTChannel *antChannel;
-     pthread_t listenerId;
-     pthread_t pollerId;
-     bool threadRun;
-     int pollTime;
-     bool extMessages;
+    libusb_context *usb_ctx;
+    libusb_device_handle *usb_handle;
+    libusb_config_descriptor *usb_config;
+    int readEndpoint;
+    int writeEndpoint;
+    int readTimeout;
+    int writeTimeout;
+    int numChannels;
+    ANTChannel *antChannel;
+    pthread_t listenerId;
+    pthread_t pollerId;
+    bool threadRun;
+    int pollTime;
+    bool extMessages;
+
+    void* listenerThread(void);
+    void* pollerThread(void);
+    static void* callListenerThread(void *ctx) {
+        return ((ANTUSB*)ctx)->listenerThread();
+    }
+    static void* callPollerThread(void *ctx) {
+        return ((ANTUSB*)ctx)->pollerThread();
+    }
 };
 
 #endif  // SRC_ANT_H_
