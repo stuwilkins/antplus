@@ -57,10 +57,6 @@ AntUsb::AntUsb(void) {
 }
 
 AntUsb::~AntUsb(void) {
-    if (usb_config != NULL) {
-        libusb_free_config_descriptor(usb_config);
-    }
-
     close();
 
     if (antChannel != nullptr) {
@@ -223,6 +219,10 @@ int AntUsb::open(void) {
 }
 
 int AntUsb::close(void) {
+    if (usb_config != NULL) {
+        libusb_free_config_descriptor(usb_config);
+    }
+
     if (usb_handle != NULL) {
         libusb_close(usb_handle);
     }
