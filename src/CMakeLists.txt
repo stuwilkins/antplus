@@ -15,9 +15,16 @@ set_property(SOURCE ${CMAKE_BINARY_DIR}/version.cpp
 add_executable(ant-recorder ${SOURCE_FILES})
 
 target_link_libraries(ant-recorder PUBLIC
-	usb-1.0 pthread ${HDF5_LIBRARIES})
+	Threads::Threads
+	${HDF5_LIBRARIES} 
+	${CONFIG++_LIBRARIES}
+	${LIBUSB1_LIBRARIES}
+	)
 
 target_include_directories(ant-recorder PUBLIC 
-	${HDF5_INCLUDE_DIRS} )
+	${HDF5_INCLUDE_DIRS} 
+	${CONFIG++_INCLUDE_DIRS}
+	${LIBUSB1_INCLUDE_DIRS}
+	)
 
 add_dependencies(ant-recorder version_info)
