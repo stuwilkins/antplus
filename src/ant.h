@@ -44,6 +44,10 @@
 #define SLEEP_DURATION       50000L
 #define RESET_DURATION      500000L
 
+extern const char* ANT_GIT_REV;
+extern const char* ANT_GIT_BRANCH;
+extern const char* ANT_GIT_VERSION;
+
 void* antusb_listener(void *ctx);
 void* antusb_poller(void *ctx);
 

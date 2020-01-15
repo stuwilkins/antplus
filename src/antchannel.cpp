@@ -31,7 +31,6 @@
 #include "debug.h"
 
 AntChannel::AntChannel(void) {
-    chanNum = 0;
     master = false;
     network = 0x00;
     deviceType = 0x00;
@@ -46,9 +45,8 @@ AntChannel::AntChannel(void) {
     type      = AntDevice::TYPE_NONE;
 }
 
-AntChannel::AntChannel(uint8_t chan, int type)
+AntChannel::AntChannel(int type)
     : AntChannel() {
-    setChannel(chan);
     setType(type);
 }
 
@@ -65,14 +63,9 @@ void AntChannel::setType(int t) {
         }
         i++;
     }
-
-    DEBUG_PRINT("Channel %d set to %d, %d, %d\n",
-        chanNum, deviceType, devicePeriod, deviceFrequency);
 }
 
 void AntChannel::setState(int state) {
-    DEBUG_PRINT("Channel %d state changed to %d\n",
-        chanNum, state);
     currentState = state;
 }
 

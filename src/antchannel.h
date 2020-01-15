@@ -54,11 +54,9 @@ class AntChannel {
     };
 
     AntChannel(void);
-    AntChannel(uint8_t chan, int type);
+    explicit AntChannel(int type);
     void setType(int t);
 
-    void       setChannel(uint8_t chan) { chanNum = chan; }
-    uint8_t    getChannel(void)         { return chanNum; }
     uint8_t    getNetwork(void)         { return network; }
     bool       getMaster(void)          { return master; }
     uint8_t    getDeviceType(void)      { return deviceType; }
@@ -79,7 +77,6 @@ class AntChannel {
     AntDevicePWR* getDevicePWR(void)    { return &devicePWR; }
 
  private:
-    uint8_t  chanNum;
     uint8_t  network;
     uint8_t  master;
     int      currentState;

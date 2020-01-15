@@ -28,6 +28,8 @@
 #include <pthread.h>
 #include <H5Cpp.h>
 #include <csignal>
+#include <iostream>
+#include <libconfig.h++>
 
 #include "debug.h"
 #include "ant.h"
@@ -128,8 +130,17 @@ int write_data(AntUsb *antusb, std::string filename) {
 }
 
 int main(int argc, char *argv[]) {
-    (void)argc;
-    (void)argv;
+    char c;
+    while ((c = getopt(argc, argv, "v")) != -1) {
+        switch (c) {
+            case 'v':
+                std::cout << ANT_GIT_REV << std::endl;
+                break;
+        }
+    }
+
+    exit(0);
+
     AntUsb antusb;
 
     if (antusb.init()) {

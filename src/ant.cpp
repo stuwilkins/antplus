@@ -49,7 +49,6 @@ AntUsb::AntUsb(void) {
     DEBUG_PRINT("Creating %d channels.\n", numChannels);
     antChannel = new AntChannel[numChannels];
     for (int i=0; i < numChannels; i++) {
-        antChannel[i].setChannel(i);
         antChannel[i].setType(AntDevice::TYPE_NONE);
     }
 
@@ -444,8 +443,7 @@ void* antusb_poller(void *ctx) {
                         (state == AntChannel::STATE_OPEN_PAIRED)) {
                     if (chan->getType() == AntDevice::TYPE_FEC) {
                         // We need to send requests
-                        antusb->requestDataPage(chan->getChannel(),
-                                ANT_DEVICE_COMMON_STATUS);
+                        antusb->requestDataPage(r, ANT_DEVICE_COMMON_STATUS);
                         pollStart = Clock::now();
                     }
                 }
@@ -643,12 +641,10 @@ int AntUsb::channelProcessEvent(AntMessage *m) {
             channelChangeStateTo(chan, AntChannel::STATE_OPEN_UNPAIRED);
             break;
         case EVENT_TRANSFER_TX_COMPLETED:
-            DEBUG_PRINT("TX Transfer Completed on channel %d\n",
-                    antChan->getChannel());
+            DEBUG_PRINT("TX Transfer Completed on channel %d\n", chan);
             break;
         case EVENT_RX_FAIL:
-            DEBUG_PRINT("RX Failed on channel %d\n",
-                    antChan->getChannel());
+            DEBUG_PRINT("RX Failed on channel %d\n", chan);
             break;
         default:
             DEBUG_PRINT("Unknown response 0x%02X\n", responseCode);
