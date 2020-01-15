@@ -63,7 +63,9 @@ AntUsb::~AntUsb(void) {
 
     close();
 
-    delete [] antChannel;
+    if (antChannel != nullptr) {
+        delete [] antChannel;
+    }
 }
 
 int AntUsb::open(void) {
