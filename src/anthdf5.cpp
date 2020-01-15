@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <H5Cpp.h>
+#include <getopt.h>
 #include <csignal>
 #include <iostream>
 #include <libconfig.h++>
@@ -129,41 +130,62 @@ int write_data(AntUsb *antusb, std::string filename) {
     return 0;
 }
 
-int main(int argc, char *argv[]) {
-    char c;
-    while ((c = getopt(argc, argv, "v")) != -1) {
-        switch (c) {
-            case 'v':
-                std::cout << ANT_GIT_REV << std::endl;
-                break;
-        }
-    }
-
+int read_config(AntUsb *usb, std::string filename) {
     libconfig::Config cfg;
 
     // Read the file. If there is an error, report it and exit.
     try {
-        cfg.readFile("example.cfg");
+        cfg.readFile(filename.c_str());
     }
     catch(const libconfig::FileIOException &fioex) {
         std::cerr << "I/O error while reading file." << std::endl;
-        return(EXIT_FAILURE);
+        return -1;
     }
     catch(const libconfig::ParseException &pex) {
         std::cerr << "Parse error at " << pex.getFile() << ":" << pex.getLine()
             << " - " << pex.getError() << std::endl;
-        return(EXIT_FAILURE);
+        return -1;
+    }
+}
+
+int main(int argc, char *argv[]) {
+    std::string config_file("config.cfg");
+
+    int c;
+    while (1) {
+        int option_index = 0;
+        static struct option long_options[] = {
+            {"verbose", no_argument,       0, 'v'},
+            {"config",  required_argument, 0, 'c'},
+            {0,         0,                 0, 0  }
+        };
+
+        c = getopt_long(argc, argv, "vc:", long_options,
+                &option_index);
+
+        if (c == -1) {
+            break;
+        }
+
+        switch (c) {
+            case 'c':
+                config_file = optarg;
+                std::cout << config_file << std::endl;
+                break;
+        }
     }
 
-    exit(0);
+    if (optind < argc) {
+        printf("non-option ARGV-elements: ");
+        while (optind < argc)
+            printf("%s ", argv[optind++]);
+        printf("\n");
+    }
+
 
     AntUsb antusb;
 
-    if (antusb.init()) {
-        return -127;
-    }
-
-    if (antusb.setup()) {
+    if (antusb.open()) {
         return -127;
     }
 

@@ -72,6 +72,7 @@ class AntDevice {
     };
     static AntDeviceParams params[5];
 
+    AntDevice(void);
     explicit AntDevice(int nMeas);
     ~AntDevice(void);
 

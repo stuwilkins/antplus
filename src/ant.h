@@ -59,8 +59,8 @@ class AntUsb {
     };
     AntUsb(void);
     ~AntUsb(void);
-    int init(void);
-    int setup(void);
+    int open(void);
+    int close(void);
     int bulkRead(uint8_t *bytes, int size, int timeout);
     int bulkWrite(uint8_t *bytes, int size, int timeout);
     int sendMessage(AntMessage *message);

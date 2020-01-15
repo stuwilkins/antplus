@@ -57,30 +57,32 @@ AntUsb::AntUsb(void) {
 }
 
 AntUsb::~AntUsb(void) {
-    libusb_free_config_descriptor(usb_config);
+    if (usb_config != NULL) {
+        libusb_free_config_descriptor(usb_config);
+    }
+
+    close();
+
     delete [] antChannel;
 }
 
-int AntUsb::init(void) {
-    DEBUG_COMMENT("initializing USB\n");
-    int rc = libusb_init(&usb_ctx);
-    if (rc) {
-        DEBUG_PRINT("Error initializing libusb. rc = %d\n", rc);
-        return ERROR;
-    }
-    libusb_set_option(usb_ctx, LIBUSB_OPTION_LOG_LEVEL,
-            LIBUSB_LOG_LEVEL_NONE);
-
-    return NOERROR;
-}
-
-int AntUsb::setup(void) {
+int AntUsb::open(void) {
     ssize_t listCount;
     bool found;
     libusb_device **list;
     libusb_device_descriptor desc;
     libusb_device *dev;
     libusb_device_handle *handle;
+
+    DEBUG_COMMENT("initializing USB\n");
+    int rc = libusb_init(&usb_ctx);
+    if (rc) {
+        DEBUG_PRINT("Error initializing libusb. rc = %d\n", rc);
+        return ERROR;
+    }
+
+    libusb_set_option(usb_ctx, LIBUSB_OPTION_LOG_LEVEL,
+            LIBUSB_LOG_LEVEL_NONE);
 
     // First go through list and reset the device
     listCount = libusb_get_device_list(usb_ctx, &list);
@@ -216,6 +218,16 @@ int AntUsb::setup(void) {
     }
 
     return NOERROR;
+}
+
+int AntUsb::close(void) {
+    if (usb_handle != NULL) {
+        libusb_close(usb_handle);
+    }
+
+    if (usb_ctx != NULL) {
+        libusb_exit(usb_ctx);
+    }
 }
 
 int AntUsb::bulkRead(uint8_t *bytes, int size, int timeout) {

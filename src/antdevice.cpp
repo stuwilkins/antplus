@@ -28,7 +28,14 @@
 #include "antdevice.h"
 #include "debug.h"
 
-AntDevice::AntDevice(int n) {
+AntDevice::AntDevice(void) {
+    nValues = 0;
+    tsData = nullptr;
+    data   = nullptr;
+}
+
+AntDevice::AntDevice(int n)
+    : AntDevice() {
     // Create the list of values
     nValues += n;
     tsData = new std::vector<AntDeviceDatum>[nValues];
