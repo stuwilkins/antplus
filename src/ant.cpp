@@ -79,14 +79,13 @@ int ANT::setNetworkKey(uint8_t net) {
     return iface->sendMessage(&netkey);
 }
 
-int ANT::assignChannel(uint8_t chanNum, bool master, uint8_t net) {
+int ANT::assignChannel(uint8_t chanNum, uint8_t chanType, uint8_t net) {
     DEBUG_COMMENT("Sending ANT_UNASSIGN_CHANNEL\n");
     ANTMessage unassign(ANT_UNASSIGN_CHANNEL, chanNum);
     iface->sendMessage(&unassign);
 
     DEBUG_COMMENT("Sending ANT_ASSIGN_CHANNEL\n");
-    ANTMessage assign(ANT_ASSIGN_CHANNEL, chanNum,
-            master ? CHANNEL_TYPE_TX : CHANNEL_TYPE_RX, net);
+    ANTMessage assign(ANT_ASSIGN_CHANNEL, chanNum, chanType, net);
     return iface->sendMessage(&assign);
 }
 
