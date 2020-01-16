@@ -7,6 +7,7 @@ set(SOURCE_FILES ${CMAKE_BINARY_DIR}/version.cpp
 	debug.cpp
 	antmessage.cpp
 	anthdf5.cpp
+	antusbinterface.cpp
 	)
 
 set_property(SOURCE ${CMAKE_BINARY_DIR}/version.cpp 

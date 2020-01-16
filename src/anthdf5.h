@@ -31,6 +31,6 @@
 #include <string>
 #include "ant.h"
 
-int write_data(ANTUSB *antusb, std::string filename);
+int write_data(ANT *antusb, std::string filename);
 
 #endif  // SRC_ANTHDF5_H_

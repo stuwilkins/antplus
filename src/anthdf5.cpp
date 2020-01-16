@@ -34,6 +34,7 @@
 
 #include "debug.h"
 #include "ant.h"
+#include "antusbinterface.h"
 #include "antchannel.h"
 #include "antdevice.h"
 #include "anthdf5.h"
@@ -47,7 +48,7 @@ void signalHandler(int signum) {
     stop = true;
 }
 
-int write_data(ANTUSB *antusb, std::string filename) {
+int write_data(ANT *antusb, std::string filename) {
     H5::H5File file(filename, H5F_ACC_TRUNC);
 
     file.createGroup("/DATA");
@@ -130,7 +131,7 @@ int write_data(ANTUSB *antusb, std::string filename) {
     return 0;
 }
 
-int read_config(ANTUSB *usb, std::string filename) {
+int read_config(ANT *usb, std::string filename) {
     libconfig::Config cfg;
 
     // Read the file. If there is an error, report it and exit.
@@ -146,6 +147,8 @@ int read_config(ANTUSB *usb, std::string filename) {
             << " - " << pex.getError() << std::endl;
         return -1;
     }
+
+    return 0;
 }
 
 int main(int argc, char *argv[]) {
@@ -182,12 +185,13 @@ int main(int argc, char *argv[]) {
         printf("\n");
     }
 
+    ANTUSBInterface iface;
 
-    ANTUSB antusb;
-
-    if (antusb.open()) {
+    if (iface.open()) {
         return -127;
     }
+
+    ANT antusb(&iface);
 
     if (antusb.reset()) {
         return -127;

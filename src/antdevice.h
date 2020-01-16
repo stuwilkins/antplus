@@ -76,14 +76,13 @@ class ANTDevice {
     explicit ANTDevice(int nMeas);
     ~ANTDevice(void);
 
-    void addDatum(int i, ANTDeviceDatum val);
-    void parseMessage(ANTMessage *message);
-
+    void                         addDatum(int i, ANTDeviceDatum val);
+    virtual void                 parseMessage(ANTMessage *message) = 0;
     std::vector<ANTDeviceDatum>& getTsData(int i);
-    ANTDeviceDatum getData(int i);
-    std::string getDeviceName(void);
-    std::vector<std::string>& getValueNames(void) { return valueNames; }
-    int                       getNumValues(void)  { return nValues; }
+    ANTDeviceDatum               getData(int i);
+    std::string                  getDeviceName(void);
+    std::vector<std::string>&    getValueNames(void) { return valueNames; }
+    int                          getNumValues(void)  { return nValues; }
 
  private:
     // enum {
@@ -115,6 +114,7 @@ class ANTDeviceFEC : public ANTDevice {
         TRAINER_TARGET_POWER      = 10
     };
     ANTDeviceFEC(void);
+    virtual ~ANTDeviceFEC(void) {}
     void parseMessage(ANTMessage *message);
 
  private:
@@ -124,6 +124,7 @@ class ANTDeviceFEC : public ANTDevice {
 class ANTDevicePWR : public ANTDevice {
  public:
     ANTDevicePWR(void);
+    virtual ~ANTDevicePWR(void) {}
     void parseMessage(ANTMessage *message);
 
  private:
@@ -149,6 +150,7 @@ class ANTDevicePWR : public ANTDevice {
 class ANTDeviceHR : public ANTDevice {
  public:
     ANTDeviceHR(void);
+    virtual ~ANTDeviceHR(void) {}
     void parseMessage(ANTMessage *message);
 
  private:

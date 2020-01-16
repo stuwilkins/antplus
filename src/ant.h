@@ -47,20 +47,22 @@ extern const char* ANT_GIT_REV;
 extern const char* ANT_GIT_BRANCH;
 extern const char* ANT_GIT_VERSION;
 
-class ANTUSB {
+class ANTInterface {
+ public:
+    virtual int open(void) = 0;
+    virtual int close(void) = 0;
+    virtual int sendMessage(ANTMessage *message) = 0;
+    virtual int readMessage(std::vector<ANTMessage> *message) = 0;
+};
+
+class ANT {
  public:
     enum rtn {
         NOERROR = 0,
         ERROR = -1
     };
-    ANTUSB(void);
-    ~ANTUSB(void);
-    int open(void);
-    int close(void);
-    int bulkRead(uint8_t *bytes, int size, int timeout);
-    int bulkWrite(uint8_t *bytes, int size, int timeout);
-    int sendMessage(ANTMessage *message);
-    int readMessage(std::vector<ANTMessage> *message);
+    explicit ANT(ANTInterface *iface);
+    ~ANT(void);
     int reset(void);
     int setNetworkKey(uint8_t net);
     int assignChannel(uint8_t chanNum, bool master, uint8_t net);
@@ -94,13 +96,7 @@ class ANTUSB {
     time_point<Clock> startTime;
 
  private:
-    libusb_context *usb_ctx;
-    libusb_device_handle *usb_handle;
-    libusb_config_descriptor *usb_config;
-    int readEndpoint;
-    int writeEndpoint;
-    int readTimeout;
-    int writeTimeout;
+    ANTInterface *iface;
     int numChannels;
     ANTChannel *antChannel;
     pthread_t listenerId;
@@ -112,10 +108,10 @@ class ANTUSB {
     void* listenerThread(void);
     void* pollerThread(void);
     static void* callListenerThread(void *ctx) {
-        return ((ANTUSB*)ctx)->listenerThread();
+        return ((ANT*)ctx)->listenerThread();
     }
     static void* callPollerThread(void *ctx) {
-        return ((ANTUSB*)ctx)->pollerThread();
+        return ((ANT*)ctx)->pollerThread();
     }
 };
 
