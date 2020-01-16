@@ -73,9 +73,6 @@ class ANTChannel {
     void       addDeviceId(uint16_t devid);
 
     ANTDevice*    getDevice(void);
-    // ANTDeviceFEC* getDeviceFEC(void)    { return &deviceFEC; }
-    // ANTDeviceHR*  getDeviceHR(void)     { return &deviceHR; }
-    // ANTDevicePWR* getDevicePWR(void)    { return &devicePWR; }
 
  private:
     uint8_t  network;
@@ -89,9 +86,6 @@ class ANTChannel {
     std::set<uint16_t> deviceIdSet;
     int          type;
     ANTDevice    *device;
-    ANTDeviceFEC *deviceFEC;
-    ANTDeviceHR  *deviceHR;
-    ANTDevicePWR *devicePWR;
 };
 
 #endif  // SRC_ANTCHANNEL_H_

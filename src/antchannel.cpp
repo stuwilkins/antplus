@@ -44,9 +44,6 @@ ANTChannel::ANTChannel(void) {
 
     type = ANTDevice::TYPE_NONE;
     device = nullptr;
-    devicePWR = nullptr;
-    deviceFEC = nullptr;
-    deviceHR = nullptr;
 }
 
 ANTChannel::ANTChannel(int type)
@@ -56,13 +53,13 @@ ANTChannel::ANTChannel(int type)
 
 ANTChannel::~ANTChannel(void) {
     if (device != nullptr) {
-        delete deviceFEC;
-    }
-    if (devicePWR != nullptr) {
-        delete devicePWR;
-    }
-    if (deviceHR != nullptr) {
-        delete deviceHR;
+        if (type == ANTDevice::TYPE_HR) {
+            delete (ANTDeviceHR*)device;
+        } else if (type == ANTDevice::TYPE_FEC) {
+            delete (ANTDeviceFEC*)device;
+        } else if (type == ANTDevice::TYPE_PWR) {
+            delete (ANTDevicePWR*)device;
+        }
     }
 }
 
@@ -70,14 +67,11 @@ void ANTChannel::setType(int t) {
     type = t;
 
     if (type == ANTDevice::TYPE_HR) {
-        deviceHR = new ANTDeviceHR;
-        device = deviceHR;
+        device = new ANTDeviceHR;
     } else if (type == ANTDevice::TYPE_FEC) {
-        deviceFEC = new ANTDeviceFEC;
-        device = deviceFEC;
+        device = new ANTDeviceFEC;
     } else if (type == ANTDevice::TYPE_PWR) {
-        devicePWR = new ANTDevicePWR;
-        device = devicePWR;
+        device = new ANTDevicePWR;
     }
 
     int i = 0;
