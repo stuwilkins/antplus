@@ -201,10 +201,11 @@ int main(int argc, char *argv[]) {
 
     antusb.setNetworkKey(0);
 
-    antusb.channelStart(0, ANTDevice::TYPE_HR, 0x01E5);
-    antusb.channelStart(1, ANTDevice::TYPE_PWR, 0xD42D);
-    antusb.channelStart(2, ANTDevice::TYPE_PWR, 0x635E);
-    antusb.channelStart(3, ANTDevice::TYPE_FEC, 0x635E);
+    antusb.channelStart(0, ANTDevice::TYPE_PAIR, 0x0000);
+    // antusb.channelStart(0, ANTDevice::TYPE_HR, 0x01E5);
+    // antusb.channelStart(1, ANTDevice::TYPE_PWR, 0xD42D);
+    // antusb.channelStart(2, ANTDevice::TYPE_PWR, 0x635E);
+    // antusb.channelStart(3, ANTDevice::TYPE_FEC, 0x635E);
 
     signal(SIGINT, signalHandler);
     while (!stop) {

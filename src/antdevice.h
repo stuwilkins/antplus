@@ -34,6 +34,8 @@ using std::chrono::milliseconds;
 #include <chrono>
 #include <string>
 
+#include "debug.h"
+
 struct ANTDeviceParams {
     int type;
     uint8_t deviceType;
@@ -96,6 +98,18 @@ class ANTDevice {
     std::vector<std::string> valueNames;
     std::vector<std::string> metaNames;
     std::string deviceName;
+};
+
+class ANTDeviceNONE : public ANTDevice {
+ public:
+    ANTDeviceNONE(void);
+    virtual ~ANTDeviceNONE(void) {}
+    void parseMessage(ANTMessage *message) {
+        UNUSED(message);
+    }
+
+ private:
+    uint8_t lastCommandSeq;
 };
 
 class ANTDeviceFEC : public ANTDevice {

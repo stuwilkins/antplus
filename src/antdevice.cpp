@@ -76,6 +76,10 @@ std::string ANTDevice::getDeviceName(void) {
     return deviceName;
 }
 
+ANTDeviceNONE::ANTDeviceNONE(void)
+    : ANTDevice(0) {
+}
+
 ANTDeviceFEC::ANTDeviceFEC(void)
      : ANTDevice(11) {
     deviceName = std::string("FE-C");

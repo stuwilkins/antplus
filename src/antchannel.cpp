@@ -59,6 +59,8 @@ ANTChannel::~ANTChannel(void) {
             delete (ANTDeviceFEC*)device;
         } else if (type == ANTDevice::TYPE_PWR) {
             delete (ANTDevicePWR*)device;
+        } else if (type == ANTDevice::TYPE_NONE) {
+            delete (ANTDeviceNONE*)device;
         }
     }
 }
@@ -72,6 +74,8 @@ void ANTChannel::setType(int t) {
         device = new ANTDeviceFEC;
     } else if (type == ANTDevice::TYPE_PWR) {
         device = new ANTDevicePWR;
+    } else if (type == ANTDevice::TYPE_NONE) {
+        device = new ANTDeviceNONE;
     }
 
     int i = 0;
