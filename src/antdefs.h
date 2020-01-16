@@ -68,11 +68,17 @@
 #define ANT_TX_TYPE_SLAVE                   0x00
 #define ANT_TX_TYPE_MASTER                  0x05
 
-#define CHANNEL_TYPE_QUICK_SEARCH           0x10
-#define CHANNEL_TYPE_WAITING                0x20
-#define CHANNEL_TYPE_RX                     0x0
+#define CHANNEL_TYPE_RX                     0x00
 #define CHANNEL_TYPE_TX                     0x10
-#define CHANNEL_TYPE_PAIR                   0x40
+#define CHANNEL_TYPE_RX_SHARED              0x20
+#define CHANNEL_TYPE_TX_SHARED              0x30
+#define CHANNEL_TYPE_RX_ONLY                0x40
+#define CHANNEL_TYPE_TX_ONLY                0x50
+
+#define CHANNEL_TYPE_EXT_BACKGROUND_SCAN    0x01
+#define CHANNEL_TYPE_EXT_FREQ_AGILITY       0x02
+#define CHANNEL_TYPE_EXT_FAST_CHANNEL       0x10
+#define CHANNEL_TYPE_EXT_ASYNC              0x20
 
 // Channel messages
 #define RESPONSE_NO_ERROR                   0x00

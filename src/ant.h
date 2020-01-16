@@ -65,7 +65,8 @@ class ANT {
     ~ANT(void);
     int reset(void);
     int setNetworkKey(uint8_t net);
-    int assignChannel(uint8_t chanNum, uint8_t chanType, uint8_t net);
+    int assignChannel(uint8_t chanNum, uint8_t chanType,
+            uint8_t net, uint8_t ext = 0x00);
     int setChannelID(uint8_t chan, uint16_t device,
             uint8_t type, bool master);
     int setSearchTimeout(uint8_t chan, uint8_t timeout);

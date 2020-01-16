@@ -79,13 +79,14 @@ int ANT::setNetworkKey(uint8_t net) {
     return iface->sendMessage(&netkey);
 }
 
-int ANT::assignChannel(uint8_t chanNum, uint8_t chanType, uint8_t net) {
+int ANT::assignChannel(uint8_t chanNum, uint8_t chanType,
+        uint8_t net, uint8_t ext) {
     DEBUG_COMMENT("Sending ANT_UNASSIGN_CHANNEL\n");
     ANTMessage unassign(ANT_UNASSIGN_CHANNEL, chanNum);
     iface->sendMessage(&unassign);
 
     DEBUG_COMMENT("Sending ANT_ASSIGN_CHANNEL\n");
-    ANTMessage assign(ANT_ASSIGN_CHANNEL, chanNum, chanType, net);
+    ANTMessage assign(ANT_ASSIGN_CHANNEL, chanNum, chanType, net, ext);
     return iface->sendMessage(&assign);
 }
 
@@ -254,29 +255,29 @@ void* ANT::listenerThread(void) {
 
 int ANT::channelChangeStateTo(uint8_t chan, int state) {
     DEBUG_PRINT("chan = %d, state = %d\n", chan, state);
+    ANTChannel *antChannel = getChannel(chan);
     switch (state) {
         case ANTChannel::STATE_ASSIGNED:
-            assignChannel(chan,
-                    getChannel(chan)->getMaster(),
-                    getChannel(chan)->getNetwork());
+            assignChannel(chan, CHANNEL_TYPE_RX,
+                    antChannel->getNetwork());
             break;
         case ANTChannel::STATE_ID_SET:
             // Slave Channel
             setChannelID(chan,
-                    getChannel(chan)->getDeviceId(),
-                    getChannel(chan)->getDeviceType(), 0);
+                    antChannel->getDeviceId(),
+                    antChannel->getDeviceType(), 0);
             break;
         case ANTChannel::STATE_SET_TIMEOUT:
             setSearchTimeout(chan,
-                    getChannel(chan)->getSearchTimeout());
+                    antChannel->getSearchTimeout());
             break;
         case ANTChannel::STATE_SET_PERIOD:
             setChannelPeriod(chan,
-                    getChannel(chan)->getDevicePeriod());
+                    antChannel->getDevicePeriod());
             break;
         case ANTChannel::STATE_SET_FREQ:
             setChannelFreq(chan,
-                    getChannel(chan)->getDeviceFrequency());
+                    antChannel->getDeviceFrequency());
             break;
         case ANTChannel::STATE_OPEN_UNPAIRED:
             openChannel(chan);
