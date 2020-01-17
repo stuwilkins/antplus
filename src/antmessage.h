@@ -63,20 +63,26 @@ class ANTMessage {
 
     void       encode(uint8_t *msg, int *len);
     int        decode(uint8_t *data, int data_len);
-    uint8_t    getType(void)      { return antType;}
-    uint8_t    getChannel(void)   { return antChannel;}
-    uint8_t*   getData(void)      { return antData;}
-    uint8_t    getData(int n)     { return antData[n];}
-    int        getDataLen(void)   { return antDataLen;}
-    void       setTimestamp(void) { ts = Clock::now(); }
+    uint8_t    getType(void)       { return antType;}
+    uint8_t    getChannel(void)    { return antChannel;}
+    uint8_t*   getData(void)       { return antData;}
+    uint8_t    getData(int n)      { return antData[n];}
+    int        getDataLen(void)    { return antDataLen;}
+    void       setTimestamp(void)  { ts = Clock::now(); }
     time_point<Clock>
-               getTimestamp(void) { return ts; }
+               getTimestamp(void)  { return ts; }
+    uint16_t   getDeviceID(void)   { return antDeviceID; }
+    uint8_t    getDeviceType(void) { return antDeviceType; }
+    uint8_t    getTransType(void)  { return antTransType; }
 
  private:
-    uint8_t               antType;
+    uint8_t           antType;
     uint8_t           antChannel;
     uint8_t           antData[MAX_MESSAGE_SIZE];
     int               antDataLen;
+    uint16_t          antDeviceID;
+    uint8_t           antDeviceType;
+    uint8_t           antTransType;
     time_point<Clock> ts;
 };
 
