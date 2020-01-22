@@ -37,14 +37,14 @@ ANT::ANT(ANTInterface *interface) {
     numChannels   = 8;
     threadRun     = false;
     pollTime      = 2000;  // ms
-    extMessages   = false;
+    extMessages   = true;
 
     iface = interface;
 
     DEBUG_PRINT("Creating %d channels.\n", numChannels);
     antChannel = new ANTChannel[numChannels];
     for (int i=0; i < numChannels; i++) {
-        antChannel[i].setType(ANTDevice::TYPE_NONE);
+        antChannel[i].setType(ANTChannel::TYPE_NONE);
     }
 
     // Set the start time
@@ -95,7 +95,8 @@ int ANT::setChannelID(uint8_t chan, uint16_t device,
     DEBUG_COMMENT("Sending ANT_CHANNEL_ID\n");
     ANTMessage setid(ANT_CHANNEL_ID, chan,
             (uint8_t)(device & 0xFF), (uint8_t)(device>>8),
-            type, master ? ANT_TX_TYPE_MASTER : ANT_TX_TYPE_SLAVE);
+            (uint8_t)type,
+            (uint8_t)(master ? ANT_TX_TYPE_MASTER : ANT_TX_TYPE_SLAVE));
 
     return iface->sendMessage(&setid);
 }
@@ -166,7 +167,7 @@ int ANT::startThreads(void) {
     DEBUG_COMMENT("Starting listener thread ...\n");
     pthread_create(&listenerId, NULL, callListenerThread, (void *)this);
 
-    DEBUG_COMMENT("Starting poller thread ...\n");
+    DEBUG_COMMENT("Starting Poller Thread ...\n");
     pthread_create(&pollerId, NULL, callPollerThread, (void *)this);
     return NOERROR;
 }
@@ -184,7 +185,7 @@ int ANT::stopThreads(void) {
 }
 
 void* ANT::pollerThread(void) {
-    DEBUG_COMMENT("Started Listener Loop ....\n");
+    DEBUG_COMMENT("Poller Thread Started\n");
 
     time_point<Clock> pollStart = Clock::now();
 
@@ -194,8 +195,6 @@ void* ANT::pollerThread(void) {
         auto poll = std::chrono::duration_cast
             <std::chrono::milliseconds> (now - pollStart);
 
-        // DEBUG_PRINT("poll = %ld\n", poll.count());
-
         if (poll.count() >= getPollTime()) {
             for (int r=0; r < getNumChannels(); r++) {
                 ANTChannel *chan = getChannel(r);
@@ -203,13 +202,14 @@ void* ANT::pollerThread(void) {
                 int state = chan->getState();
                 if ((state == ANTChannel::STATE_OPEN_UNPAIRED) ||
                         (state == ANTChannel::STATE_OPEN_PAIRED)) {
-                    if (chan->getType() == ANTDevice::TYPE_FEC) {
-                        // We need to send requests
+                    if (chan->getType() == ANTChannel::TYPE_FEC) {
                         requestDataPage(r, ANT_DEVICE_COMMON_STATUS);
-                        pollStart = Clock::now();
                     }
                 }
             }
+
+            pollStart = Clock::now();
+
         } else {
             usleep(SLEEP_DURATION);  // be a nice thread ...
         }
@@ -219,7 +219,7 @@ void* ANT::pollerThread(void) {
 }
 
 void* ANT::listenerThread(void) {
-    DEBUG_COMMENT("Started Listener Loop ....\n");
+    DEBUG_COMMENT("Listener Thread Started\n");
 
     while (threadRun) {
         std::vector<ANTMessage> message;
@@ -236,14 +236,11 @@ void* ANT::listenerThread(void) {
                     channelProcessID(&m);
                     break;
                 case ANT_BROADCAST_DATA:
-                    channelProcessBroadcast(&m);
-                    break;
                 case ANT_ACK_DATA:
-                    // We process these the same as broadcasts
                     channelProcessBroadcast(&m);
                     break;
                 default:
-                    DEBUG_PRINT("Unable to process ... type = 0x%02X\n",
+                    DEBUG_PRINT("UNKNOWN TYPE 0x%02X\n",
                             m.getType());
                     break;
             }
@@ -258,13 +255,13 @@ int ANT::channelChangeStateTo(uint8_t chan, int state) {
     ANTChannel *antChannel = getChannel(chan);
     switch (state) {
         case ANTChannel::STATE_ASSIGNED:
-            assignChannel(chan, CHANNEL_TYPE_RX,
-                    antChannel->getNetwork());
+            assignChannel(chan,
+                    antChannel->getChannelType(),
+                    antChannel->getNetwork(),
+                    antChannel->getExtended());
             break;
         case ANTChannel::STATE_ID_SET:
-            // Slave Channel
-            setChannelID(chan,
-                    antChannel->getDeviceId(),
+            setChannelID(chan, antChannel->getDeviceID(),
                     antChannel->getDeviceType(), 0);
             break;
         case ANTChannel::STATE_SET_TIMEOUT:
@@ -290,12 +287,17 @@ int ANT::channelChangeStateTo(uint8_t chan, int state) {
 }
 
 int ANT::channelStart(uint8_t chan, int type,
-        uint16_t id, bool wait) {
+        uint16_t id, bool scanning, bool wait) {
     // Start a channel config
 
     ANTChannel *antChannel = getChannel(chan);
-    antChannel->setType(type);
     antChannel->setDeviceID(id);
+    antChannel->setType(type);
+    antChannel->setChannelType(CHANNEL_TYPE_RX);
+
+    if (scanning) {
+        antChannel->setExtended(CHANNEL_TYPE_EXT_BACKGROUND_SCAN);
+    }
 
     // Claim the channel.
 
@@ -338,8 +340,6 @@ int ANT::channelProcessID(ANTMessage *m) {
     DEBUG_PRINT("Processed Device ID 0x%04X type 0x%02X on channel %d\n",
             id, type, chan);
 
-    getChannel(chan)->addDeviceId(id);
-
     return NOERROR;
 }
 
@@ -347,86 +347,72 @@ int ANT::channelProcessEvent(ANTMessage *m) {
     // 2nd Byte is event code
     uint8_t chan = m->getChannel();
     uint8_t commandCode = m->getData(0);
-    uint8_t responseCode = m->getData(1);
 
     ANTChannel *antChan = getChannel(m->getChannel());
 
-    DEBUG_PRINT("Channel response (chan = %d"
-            " type = 0x%02X code = 0x%02X response ="
-            " 0x%02X)\n", m->getChannel(), m->getType(),
-            commandCode, responseCode);
-
-    switch (responseCode) {
-        case RESPONSE_NO_ERROR:
-            switch (commandCode) {
-                case ANT_ASSIGN_CHANNEL:
-                    antChan->setState(ANTChannel::STATE_ASSIGNED);
-                    channelChangeStateTo(chan, ANTChannel::STATE_ID_SET);
-                    break;
-                case ANT_CHANNEL_ID:
-                    antChan->setState(ANTChannel::STATE_ID_SET);
-                    channelChangeStateTo(chan, ANTChannel::STATE_SET_TIMEOUT);
-                    break;
-                case ANT_LP_SEARCH_TIMEOUT:
-                    antChan->setState(
-                            ANTChannel::STATE_SET_TIMEOUT);
-                    channelChangeStateTo(chan, ANTChannel::STATE_SET_PERIOD);
-                    break;
-                case ANT_CHANNEL_PERIOD:
-                    antChan->setState(ANTChannel::STATE_SET_PERIOD);
-                    channelChangeStateTo(chan, ANTChannel::STATE_SET_FREQ);
-                    break;
-                case ANT_CHANNEL_FREQUENCY:
-                    antChan->setState(ANTChannel::STATE_SET_FREQ);
-                    channelChangeStateTo(chan,
-                            ANTChannel::STATE_OPEN_UNPAIRED);
-                    break;
-                case ANT_OPEN_CHANNEL:
-                    // Do nothing, but set state
-                    antChan->setState(
-                            ANTChannel::STATE_OPEN_UNPAIRED);
-                    break;
-                default:
-                    DEBUG_PRINT("Unknown command 0x%02X\n", commandCode);
-                    break;
-            }
-            break;
-        case EVENT_RX_SEARCH_TIMEOUT:
-            DEBUG_PRINT("Search timeout on channel %d\n", chan);
-            antChan->setState(ANTChannel::STATE_OPEN_UNPAIRED);
-            break;
-        case EVENT_CHANNEL_CLOSED:
-            antChan->setState(ANTChannel::STATE_CLOSED);
-            channelChangeStateTo(chan, ANTChannel::STATE_OPEN_UNPAIRED);
-            break;
-        case EVENT_TRANSFER_TX_COMPLETED:
-            DEBUG_PRINT("TX Transfer Completed on channel %d\n", chan);
-            break;
-        case EVENT_RX_FAIL:
-            DEBUG_PRINT("RX Failed on channel %d\n", chan);
-            break;
-        default:
-            DEBUG_PRINT("Unknown response 0x%02X\n", responseCode);
-            break;
+    if (commandCode != 0x01) {
+        switch (commandCode) {
+            case ANT_ASSIGN_CHANNEL:
+                antChan->setState(ANTChannel::STATE_ASSIGNED);
+                channelChangeStateTo(chan, ANTChannel::STATE_ID_SET);
+                break; case ANT_CHANNEL_ID:
+                antChan->setState(ANTChannel::STATE_ID_SET);
+                channelChangeStateTo(chan, ANTChannel::STATE_SET_TIMEOUT);
+                break;
+            case ANT_LP_SEARCH_TIMEOUT:
+                antChan->setState(
+                        ANTChannel::STATE_SET_TIMEOUT);
+                channelChangeStateTo(chan, ANTChannel::STATE_SET_PERIOD);
+                break;
+            case ANT_CHANNEL_PERIOD:
+                antChan->setState(ANTChannel::STATE_SET_PERIOD);
+                channelChangeStateTo(chan, ANTChannel::STATE_SET_FREQ);
+                break;
+            case ANT_CHANNEL_FREQUENCY:
+                antChan->setState(ANTChannel::STATE_SET_FREQ);
+                channelChangeStateTo(chan,
+                        ANTChannel::STATE_OPEN_UNPAIRED);
+                break;
+            case ANT_OPEN_CHANNEL:
+                // Do nothing, but set state
+                antChan->setState(
+                        ANTChannel::STATE_OPEN_UNPAIRED);
+                break;
+            default:
+                DEBUG_PRINT("Unknown command 0x%02X\n", commandCode);
+                break;
+        }
+    } else {
+        uint8_t eventCode = m->getData(1);
+        switch (eventCode) {
+            case EVENT_RX_SEARCH_TIMEOUT:
+                DEBUG_PRINT("Search timeout on channel %d\n", chan);
+                antChan->setState(ANTChannel::STATE_OPEN_UNPAIRED);
+                break;
+            case EVENT_RX_FAIL:
+                DEBUG_PRINT("RX Failed on channel %d\n", chan);
+                break;
+            case EVENT_TX:
+                DEBUG_PRINT("TX on channel %d\n", chan);
+                break;
+            case EVENT_TRANSFER_RX_FAILED:
+                DEBUG_PRINT("RX Transfer Completed on channel %d\n", chan);
+                break;
+            case EVENT_TRANSFER_TX_COMPLETED:
+                DEBUG_PRINT("TX Transfer Completed on channel %d\n", chan);
+                break;
+            default:
+                DEBUG_PRINT("Unknown response 0x%02X\n", eventCode);
+                break;
+        }
     }
+
     return NOERROR;
 }
 
 int ANT::channelProcessBroadcast(ANTMessage *m) {
     // Parse the ID
     uint8_t chan = m->getChannel();
-    getChannel(chan)->getDevice()->parseMessage(m);
-    // switch (getChannel(chan)->getType()) {
-    //     case ANTDevice::TYPE_HR:
-    //         getChannel(chan)->getDeviceHR()->parseMessage(m);
-    //         break;
-    //     case ANTDevice::TYPE_PWR:
-    //         getChannel(chan)->getDevicePWR()->parseMessage(m);
-    //         break;
-    //     case ANTDevice::TYPE_FEC:
-    //         getChannel(chan)->getDeviceFEC()->parseMessage(m);
-    //         break;
-    // }
-
+    getChannel(chan)->parseMessage(m);
     return NOERROR;
 }

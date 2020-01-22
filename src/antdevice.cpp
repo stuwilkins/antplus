@@ -29,17 +29,29 @@
 #include "debug.h"
 
 ANTDevice::ANTDevice(void) {
-    nValues = 0;
-    tsData = nullptr;
-    data   = nullptr;
+    nValues     = 0;
+    nMetaValues = 0;
+    tsData      = nullptr;
+    data        = nullptr;
+    metaData    = nullptr;
 }
 
-ANTDevice::ANTDevice(int n)
+ANTDevice::ANTDevice(int nMeas, int nMetaMeas,
+        const ANTDeviceID &id)
     : ANTDevice() {
     // Create the list of values
-    nValues += n;
-    tsData = new std::vector<ANTDeviceDatum>[nValues];
-    data   = new ANTDeviceDatum[nValues];
+    nValues += nMeas;
+    nMetaValues += nMetaMeas;
+    devID = id;
+
+    metaNames.push_back("HW_REVISION");
+    metaNames.push_back("MANUFACTURER_ID");
+    metaNames.push_back("MODEL_NUMBER");
+    metaNames.push_back("SERIAL_NUMBER");
+
+    tsData   = new std::vector<ANTDeviceDatum>[nValues];
+    data     = new ANTDeviceDatum[nValues];
+    metaData = new float[nMetaValues];
 }
 
 ANTDevice::~ANTDevice(void) {
@@ -49,15 +61,14 @@ ANTDevice::~ANTDevice(void) {
     if (data != nullptr) {
         delete [] data;
     }
+    if (metaData != nullptr) {
+        delete [] metaData;
+    }
 }
 
-ANTDeviceParams ANTDevice::params[] = {
-    {  ANTDevice::TYPE_HR,   0x78, 0x1F86, 0x39 },
-    {  ANTDevice::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
-    {  ANTDevice::TYPE_FEC,  0x11, 0x2000, 0x39 },
-    {  ANTDevice::TYPE_PAIR, 0x00, 0x0000, 0x39 },
-    {  ANTDevice::TYPE_NONE, 0x00, 0x0000, 0x00 }
-};
+void ANTDevice::addMetaDatum(int i, float val) {
+    metaData[i] = val;
+}
 
 void ANTDevice::addDatum(int i, ANTDeviceDatum val) {
     tsData[i].push_back(val);
@@ -76,12 +87,54 @@ std::string ANTDevice::getDeviceName(void) {
     return deviceName;
 }
 
-ANTDeviceNONE::ANTDeviceNONE(void)
-    : ANTDevice(0) {
+void ANTDevice::parseMessage(ANTMessage *message) {
+    uint8_t *data = message->getData();
+    int dataLen = message->getDataLen();
+
+    if (dataLen < 8) {
+        return;
+    }
+
+    DEBUG_COMMENT("Parsing message\n");
+
+    if (data[0] == ANT_DEVICE_COMMON_DATA) {
+        uint8_t hwRevision;
+        uint16_t manufacturerID;
+        uint16_t modelNumber;
+
+        hwRevision      = data[3];
+        manufacturerID  = data[4];
+        manufacturerID |= (data[5] << 8);
+        modelNumber     = data[6];
+        modelNumber    |= data[7];
+
+        addMetaDatum(HW_REVISION, hwRevision);
+        addMetaDatum(MANUFACTURER_ID, manufacturerID);
+        addMetaDatum(MODEL_NUMBER, modelNumber);
+
+        DEBUG_PRINT("COMMON_DATA, %d, %d, %d\n",
+                hwRevision, manufacturerID, modelNumber);
+    } else if (data[0] == ANT_DEVICE_COMMON_INFO) {
+        uint32_t serialNumber;
+
+        serialNumber  = data[4];
+        serialNumber |= (data[5] << 8);
+        serialNumber |= (data[6] << 16);
+        serialNumber |= (data[7] << 24);
+
+        addMetaDatum(SERIAL_NUMBER, serialNumber);
+
+        DEBUG_PRINT("COMMON_INFO, %d\n", serialNumber);
+    }
 }
 
-ANTDeviceFEC::ANTDeviceFEC(void)
-     : ANTDevice(11) {
+ANTDeviceNONE::ANTDeviceNONE(const ANTDeviceID &id)
+    : ANTDevice(0, 0, id) {
+    deviceName = std::string("NONE");
+}
+
+ANTDeviceFEC::ANTDeviceFEC(const ANTDeviceID &id)
+     : ANTDevice(11, 0, id) {
     deviceName = std::string("FE-C");
     valueNames.push_back("GENERAL_INST_SPEED");
     valueNames.push_back("SETTINGS_CYCLE_LENGTH");
@@ -100,6 +153,8 @@ ANTDeviceFEC::ANTDeviceFEC(void)
 
 
 void ANTDeviceFEC::parseMessage(ANTMessage *message) {
+    ANTDevice::parseMessage(message);
+
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -108,6 +163,8 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
         DEBUG_COMMENT("Invalid FEC Message\n");
         return;
     }
+
+    DEBUG_COMMENT("Parsing message\n");
 
     if (data[0] == ANT_DEVICE_FEC_GENERAL) {
         uint16_t _instSpeed;
@@ -195,8 +252,8 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
     }
 }
 
-ANTDevicePWR::ANTDevicePWR(void)
-    : ANTDevice(15) {
+ANTDevicePWR::ANTDevicePWR(const ANTDeviceID &id)
+    : ANTDevice(15, 0, id) {
     deviceName = std::string("POWER");
     valueNames.push_back("BALANCE");
     valueNames.push_back("CADENCE");
@@ -216,6 +273,8 @@ ANTDevicePWR::ANTDevicePWR(void)
 }
 
 void ANTDevicePWR::parseMessage(ANTMessage *message) {
+    ANTDevice::parseMessage(message);
+
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -224,6 +283,8 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
         DEBUG_COMMENT("Invalid Power Message\n");
         return;
     }
+
+    DEBUG_COMMENT("Parsing message\n");
 
     if (data[0] == ANT_DEVICE_POWER_STANDARD) {
         uint8_t balance = data[2];
@@ -294,8 +355,8 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
     }
 }
 
-ANTDeviceHR::ANTDeviceHR(void)
-     : ANTDevice(2) {
+ANTDeviceHR::ANTDeviceHR(const ANTDeviceID &id)
+     : ANTDevice(2, 0, id) {
     hbEventTime = 0;
     previousHbEventTime = 0;
     hbCount = 0;
@@ -308,6 +369,8 @@ ANTDeviceHR::ANTDeviceHR(void)
 }
 
 void ANTDeviceHR::parseMessage(ANTMessage *message) {
+    ANTDevice::parseMessage(message);
+
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
@@ -316,6 +379,8 @@ void ANTDeviceHR::parseMessage(ANTMessage *message) {
         DEBUG_COMMENT("Invalid HR Message\n");
         return;
     }
+
+    DEBUG_COMMENT("Parsing message\n");
 
     // Do the common section (independant of page no)
 

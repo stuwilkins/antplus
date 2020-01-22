@@ -27,7 +27,7 @@
 #ifndef SRC_ANTDEFS_H_
 #define SRC_ANTDEFS_H_
 
-#define MAX_MESSAGE_SIZE                    2048
+#define MAX_MESSAGE_SIZE                    128
 
 // ANT Messages
 #define ANT_SYNC_BYTE                       0xA4
@@ -121,7 +121,14 @@
 
 // ANT Device Settings
 
+#define ANT_DEVICE_NONE                     0x00
+#define ANT_DEVICE_FEC                      0x11
+#define ANT_DEVICE_PWR                      0x0B
+#define ANT_DEVICE_HR                       0x78
+
 #define ANT_DEVICE_COMMON_STATUS            0x47
+#define ANT_DEVICE_COMMON_DATA              0x50
+#define ANT_DEVICE_COMMON_INFO              0x51
 
 #define ANT_DEVICE_FEC_GENERAL              0x10
 #define ANT_DEVICE_FEC_GENERAL_SETTINGS     0x11
@@ -139,6 +146,5 @@
 #define ANT_DEVICE_POWER_PARAMS_TORQUE      0x02
 
 #define ANT_DEVICE_HR_PREVIOUS              0x04
-
 
 #endif  // SRC_ANTDEFS_H_

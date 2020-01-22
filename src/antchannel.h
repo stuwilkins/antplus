@@ -28,7 +28,16 @@
 #define SRC_ANTCHANNEL_H_
 
 #include <set>
+#include <vector>
 #include "antdevice.h"
+
+class ANTChannelParams {
+ public:
+    int type;
+    uint8_t deviceType;
+    uint16_t devicePeriod;
+    uint8_t deviceFrequency;
+};
 
 class ANTChannel {
  public:
@@ -37,6 +46,14 @@ class ANTChannel {
         NOERROR     = 0,
         ERROR       = -1,
         ERROR_STATE = 1
+    };
+    enum {
+        // The channel types
+        TYPE_NONE = 0,
+        TYPE_HR   = 1,
+        TYPE_PWR  = 2,
+        TYPE_FEC  = 3,
+        TYPE_PAIR = 4
     };
     enum {
         // The state machine to define
@@ -56,36 +73,46 @@ class ANTChannel {
     ANTChannel(void);
     ~ANTChannel(void);
     explicit ANTChannel(int type);
-    void setType(int t);
 
-    uint8_t    getNetwork(void)         { return network; }
-    bool       getMaster(void)          { return master; }
-    uint8_t    getDeviceType(void)      { return deviceType; }
-    uint16_t   getDeviceId(void)        { return deviceId; }
-    uint16_t   getDevicePeriod(void)    { return devicePeriod; }
-    uint16_t   getDeviceFrequency(void) { return deviceFrequency; }
-    uint16_t   getSearchTimeout(void)   { return searchTimeout; }
-    int        getType(void)            { return type; }
-    int        getState(void)           { return currentState; }
-    uint16_t   getDeviceID(void)        { return deviceId; }
-    void       setDeviceID(uint16_t id) { deviceId = id; }
+    void       setType(int t);
+    uint8_t    getNetwork(void)             { return network; }
+    void       setExtended(uint8_t ext)     { extended = ext; }
+    uint8_t    getExtended(void)            { return extended; }
+    uint8_t    getChannelType(void)         { return channelType; }
+    void       setChannelType(uint8_t type) { channelType = type; }
+    uint16_t   getSearchTimeout(void)       { return searchTimeout; }
+    int        getType(void)                { return type; }
+    int        getState(void)               { return currentState; }
+    uint16_t   getDeviceID(void)            { return deviceId; }
+    void       setDeviceID(uint16_t id)     { deviceId = id; }
+    uint8_t    getDeviceType(void)          { return deviceType; }
+    uint16_t   getDevicePeriod(void)        { return devicePeriod; }
+    uint16_t   getDeviceFrequency(void)     { return deviceFrequency; }
+
     void       setState(int state);
-    void       addDeviceId(uint16_t devid);
 
-    ANTDevice*    getDevice(void);
+    void       parseMessage(ANTMessage *message);
+
+    ANTDevice* addDevice(ANTDeviceID *id);
+    std::vector<ANTDevice*> getDeviceList(void) {
+        return deviceList;
+    }
 
  private:
     uint8_t  network;
-    uint8_t  master;
     int      currentState;
-    uint8_t  deviceType;
+    uint8_t  channelType;
     uint16_t deviceId;
+    uint8_t  deviceType;
     uint16_t devicePeriod;
     uint8_t  deviceFrequency;
     uint8_t  searchTimeout;
-    std::set<uint16_t> deviceIdSet;
-    int          type;
-    ANTDevice    *device;
+    uint8_t  extended;
+    int      type;
+
+    std::vector<ANTDevice*> deviceList;
+
+    static ANTChannelParams params[5];
 };
 
 #endif  // SRC_ANTCHANNEL_H_

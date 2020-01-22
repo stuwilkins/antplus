@@ -24,6 +24,7 @@
 // SOFTWARE.
 //
 
+#include <algorithm>
 
 #include "ant.h"
 #include "antdevice.h"
@@ -31,19 +32,16 @@
 #include "debug.h"
 
 ANTChannel::ANTChannel(void) {
-    master = false;
     network = 0x00;
-    deviceType = 0x00;
     deviceId = 0x00;
-    devicePeriod = 0x00;
-    deviceFrequency = 0x00;
-    searchTimeout = 0x05;
+    searchTimeout = 0xFF;
+    channelType = CHANNEL_TYPE_RX;
+    extended = 0x00;
 
     // The state of this channel
     currentState = STATE_IDLE;
 
-    type = ANTDevice::TYPE_NONE;
-    device = nullptr;
+    type = TYPE_NONE;
 }
 
 ANTChannel::ANTChannel(int type)
@@ -52,66 +50,121 @@ ANTChannel::ANTChannel(int type)
 }
 
 ANTChannel::~ANTChannel(void) {
-    if (device != nullptr) {
-        if (type == ANTDevice::TYPE_HR) {
-            delete (ANTDeviceHR*)device;
-        } else if (type == ANTDevice::TYPE_FEC) {
-            delete (ANTDeviceFEC*)device;
-        } else if (type == ANTDevice::TYPE_PWR) {
-            delete (ANTDevicePWR*)device;
-        } else if (type == ANTDevice::TYPE_NONE) {
-            delete (ANTDeviceNONE*)device;
+    for (auto dev : deviceList) {
+        switch (dev->getDeviceID().getType()) {
+            case ANT_DEVICE_NONE:
+                delete (ANTDeviceNONE*)dev;
+                break;
+            case ANT_DEVICE_HR:
+                delete (ANTDeviceHR*)dev;
+                break;
+            case ANT_DEVICE_FEC:
+                delete (ANTDeviceFEC*)dev;
+                break;
+            case ANT_DEVICE_PWR:
+                delete (ANTDevicePWR*)dev;
+                break;
         }
     }
 }
 
 void ANTChannel::setType(int t) {
-    type = t;
+    channelType = t;
 
-    if (type == ANTDevice::TYPE_HR) {
-        device = new ANTDeviceHR;
-    } else if (type == ANTDevice::TYPE_FEC) {
-        device = new ANTDeviceFEC;
-    } else if (type == ANTDevice::TYPE_PWR) {
-        device = new ANTDevicePWR;
-    } else if (type == ANTDevice::TYPE_NONE) {
-        device = new ANTDeviceNONE;
-    }
+    DEBUG_PRINT("Setting type to %d\n", channelType);
 
     int i = 0;
-    while (ANTDevice::params[i].type != ANTDevice::TYPE_NONE) {
-        if (ANTDevice::params[i].type == type) {
-            deviceType = ANTDevice::params[i].deviceType;
-            devicePeriod = ANTDevice::params[i].devicePeriod;
-            deviceFrequency = ANTDevice::params[i].deviceFrequency;
+    while (params[i].type != TYPE_NONE) {
+        if (params[i].type == channelType) {
+            deviceType = params[i].deviceType;
+            devicePeriod = params[i].devicePeriod;
+            deviceFrequency = params[i].deviceFrequency;
+            DEBUG_PRINT("type = 0x%02X period = 0x%04X freq = 0x%02X\n",
+                    deviceType, devicePeriod, deviceFrequency);
             break;
         }
         i++;
     }
+
+    if (params[i].type == TYPE_NONE) {
+        DEBUG_COMMENT("Failed to set channel type\n");
+    }
 }
+
+ANTChannelParams ANTChannel::params[] = {
+    {  ANTChannel::TYPE_HR,   0x78, 0x1F86, 0x39 },
+    {  ANTChannel::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
+    {  ANTChannel::TYPE_FEC,  0x11, 0x2000, 0x39 },
+    {  ANTChannel::TYPE_PAIR, 0x00, 0x0000, 0x39 },
+    {  ANTChannel::TYPE_NONE, 0x00, 0x0000, 0x00 },
+};
 
 void ANTChannel::setState(int state) {
     currentState = state;
 }
 
-void ANTChannel::addDeviceId(uint16_t devid) {
-    deviceIdSet.insert(devid);
+ANTDevice* ANTChannel::addDevice(ANTDeviceID *id) {
+    ANTDevice *dev = nullptr;
+
+    switch (id->getType()) {
+        case ANT_DEVICE_NONE:
+            dev = new ANTDeviceNONE(*id);
+            break;
+        case ANT_DEVICE_HR:
+            dev = new ANTDeviceHR(*id);
+            break;
+        case ANT_DEVICE_PWR:
+            dev = new ANTDevicePWR(*id);
+            break;
+        case ANT_DEVICE_FEC:
+            dev = new ANTDeviceFEC(*id);
+            break;
+    }
+
+    if (dev != nullptr) {
+        DEBUG_PRINT("Adding device type = 0x%02X, %p\n",
+                id->getType(), (void*)dev);
+        deviceList.push_back(dev);
+    }
+
+    return dev;
 }
 
-ANTDevice* ANTChannel::getDevice(void) {
-    return device;
-    // switch (type) {
-    //     case ANTDevice::TYPE_HR:
-    //         return &deviceHR;
-    //         break;
-    //     case ANTDevice::TYPE_PWR:
-    //         return &devicePWR;
-    //         break;
-    //     case ANTDevice::TYPE_FEC:
-    //         return &deviceFEC;
-    //         break;
-    // }
+void ANTChannel::parseMessage(ANTMessage *message) {
+    ANTDeviceID devID = message->getDeviceID();
 
-    // return nullptr;
+    if (!devID.isValid()) {
+        DEBUG_COMMENT("Processing with no device id info\n");
+        return;
+    }
+
+    ANTDevice *device = nullptr;
+    for (ANTDevice *dev : deviceList) {
+        if (*dev == devID) {
+            device = dev;
+            break;
+        }
+    }
+
+    if (device == nullptr) {
+        device = addDevice(&devID);
+    }
+
+    switch (device->getDeviceID().getType()) {
+        case ANT_DEVICE_NONE:
+            ((ANTDeviceNONE*)device)->parseMessage(message);
+            break;
+        case ANT_DEVICE_HR:
+            ((ANTDeviceHR*)device)->parseMessage(message);
+            break;
+        case ANT_DEVICE_PWR:
+            ((ANTDevicePWR*)device)->parseMessage(message);
+            break;
+        case ANT_DEVICE_FEC:
+            ((ANTDeviceFEC*)device)->parseMessage(message);
+            break;
+        default:
+            device->parseMessage(message);
+            break;
+    }
 }
-

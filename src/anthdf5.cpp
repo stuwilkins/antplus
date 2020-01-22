@@ -57,72 +57,75 @@ int write_data(ANT *antusb, std::string filename) {
     // Cycle through each channel
     for (int i=0; i < antusb->getNumChannels(); i++) {
         ANTChannel *chan = antusb->getChannel(i);
-        ANTDevice *dev = chan->getDevice();
-        if (dev != nullptr) {
-            std::string devName = dev->getDeviceName() + '_';
-            devName = devName + std::to_string(chan->getDeviceID());
+        for (auto dev : chan->getDeviceList()) {
+            if (dev != nullptr) {
+                std::string devName = dev->getDeviceName() + '_';
+                devName = devName + std::to_string(chan->getDeviceID());
 
-            DEBUG_PRINT("Processing Channel %d (devName = %s)\n",
-                    i, devName.c_str());
+                DEBUG_PRINT("Processing Channel %d "
+                        "(numValues = %d, devName = %s)\n",
+                        i, dev->getNumValues(), devName.c_str());
 
-            file.createGroup("/DATA/" + devName);
-            file.createGroup("/TIMESTAMP/" + devName);
+                file.createGroup("/DATA/" + devName);
+                file.createGroup("/TIMESTAMP/" + devName);
 
-            for (int j=0; j < dev->getNumValues(); j++) {
-                // This is for each value
-                // For the values create an array
-                int64_t size = dev->getTsData(j).size();
-                if (size) {
-                    DEBUG_PRINT("Channel %d Datapoints %ld\n",
-                            i, size);
+                for (int j=0; j < dev->getNumValues(); j++) {
+                    DEBUG_PRINT("Processing value %d\n", j);
+                    // This is for each value
+                    // For the values create an array
+                    int64_t size = dev->getTsData(j).size();
+                    if (size) {
+                        DEBUG_PRINT("Channel %d Datapoints %ld\n",
+                                i, size);
 
-                    hsize_t dimsf[1];
-                    dimsf[0] = size;
+                        hsize_t dimsf[1];
+                        dimsf[0] = size;
 
-                    // First do the values
+                        // First do the values
 
-                    float *val = new float[size];
-                    for (int i = 0; i < size; i++) {
-                        val[i] = dev->getTsData(j)[i].getValue();
+                        float *val = new float[size];
+                        for (int i = 0; i < size; i++) {
+                            val[i] = dev->getTsData(j)[i].getValue();
+                        }
+
+                        H5::DataSpace dataspace(1, dimsf);
+                        H5::IntType datatype(H5::PredType::NATIVE_FLOAT);
+                        datatype.setOrder(H5T_ORDER_LE);
+
+                        std::string name = "/DATA/" + devName;
+                        name = name + "/" + dev->getValueNames()[j];
+                        DEBUG_PRINT("Writing node %s\n", name.c_str());
+
+                        H5::DataSet dataset = file.createDataSet(name,
+                                datatype, dataspace);
+                        dataset.write(val, H5::PredType::NATIVE_FLOAT);
+
+                        // Now do the timestamps
+
+                        H5::DataSpace tdataspace(1, dimsf);
+                        H5::IntType tdatatype(H5::PredType::NATIVE_UINT64);
+                        tdatatype.setOrder(H5T_ORDER_LE);
+
+                        uint64_t *tval = new uint64_t[size];
+                        for (int i = 0; i < size; i++) {
+                            auto ms = std::chrono::duration_cast
+                                <std::chrono::milliseconds>
+                                (dev->getTsData(j)[i].getTimestamp()
+                                 - antusb->getStartTime());
+                            tval[i] = ms.count();
+                        }
+
+                        name = "/TIMESTAMP/" + devName;
+                        name = name + "/" + dev->getValueNames()[j];
+                        DEBUG_PRINT("Writing node %s\n", name.c_str());
+
+                        H5::DataSet tdataset = file.createDataSet(name,
+                                tdatatype, tdataspace);
+                        tdataset.write(tval, H5::PredType::NATIVE_UINT64);
+
+                        delete [] tval;
+                        delete [] val;
                     }
-
-                    H5::DataSpace dataspace(1, dimsf);
-                    H5::IntType datatype(H5::PredType::NATIVE_FLOAT);
-                    datatype.setOrder(H5T_ORDER_LE);
-
-                    std::string name = "/DATA/" + devName;
-                    name = name + "/" + dev->getValueNames()[j];
-                    DEBUG_PRINT("Writing node %s\n", name.c_str());
-
-                    H5::DataSet dataset = file.createDataSet(name,
-                            datatype, dataspace);
-                    dataset.write(val, H5::PredType::NATIVE_FLOAT);
-
-                    // Now do the timestamps
-
-                    H5::DataSpace tdataspace(1, dimsf);
-                    H5::IntType tdatatype(H5::PredType::NATIVE_UINT64);
-                    tdatatype.setOrder(H5T_ORDER_LE);
-
-                    uint64_t *tval = new uint64_t[size];
-                    for (int i = 0; i < size; i++) {
-                        auto ms = std::chrono::duration_cast
-                            <std::chrono::milliseconds>
-                            (dev->getTsData(j)[i].getTimestamp()
-                             - antusb->getStartTime());
-                        tval[i] = ms.count();
-                    }
-
-                    name = "/TIMESTAMP/" + devName;
-                    name = name + "/" + dev->getValueNames()[j];
-                    DEBUG_PRINT("Writing node %s\n", name.c_str());
-
-                    H5::DataSet tdataset = file.createDataSet(name,
-                            tdatatype, tdataspace);
-                    tdataset.write(tval, H5::PredType::NATIVE_UINT64);
-
-                    delete [] tval;
-                    delete [] val;
                 }
             }
         }
@@ -201,7 +204,7 @@ int main(int argc, char *argv[]) {
 
     antusb.setNetworkKey(0);
 
-    antusb.channelStart(0, ANTDevice::TYPE_PAIR, 0x0000);
+    antusb.channelStart(0, ANTChannel::TYPE_PAIR, 0x0000, true);
     // antusb.channelStart(0, ANTDevice::TYPE_HR, 0x01E5);
     // antusb.channelStart(1, ANTDevice::TYPE_PWR, 0xD42D);
     // antusb.channelStart(2, ANTDevice::TYPE_PWR, 0x635E);

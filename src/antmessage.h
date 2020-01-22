@@ -30,13 +30,41 @@
 
 #include <stdint.h>
 #include <chrono>
+#include <utility>
 
 #include "antdefs.h"
 
 using Clock = std::chrono::steady_clock;
 using std::chrono::time_point;
-// using std::chrono::duration_cast;
-// using std::chrono::milliseconds;
+
+class ANTDeviceID {
+ public:
+    ANTDeviceID(void) {
+        antID   = 0x0000;
+        antType = 0x00;
+    }
+    ANTDeviceID(uint16_t id, uint8_t type) {
+        antID = id;
+        antType = type;
+    }
+    uint16_t getID(void)   { return antID; }
+    uint8_t  getType(void) { return antType; }
+    bool     isValid(void) {
+        return (antID != 0x000) && (antType != 0x00);
+    }
+    friend bool operator== (
+            const ANTDeviceID &a, const ANTDeviceID &b) {
+        return (a.antID == b.antID) && (a.antType == b.antType);
+    }
+    friend bool operator< (
+            const ANTDeviceID &a, const ANTDeviceID &b) {
+        return (a.antID < b.antID) && (a.antType < b.antType);
+    }
+
+ private:
+    uint16_t antID;
+    uint8_t antType;
+};
 
 class ANTMessage {
  public:
@@ -61,28 +89,53 @@ class ANTMessage {
     ANTMessage(uint8_t type, uint8_t chan, uint8_t b0, uint8_t b1,
             uint8_t b2, uint8_t b3, uint8_t b4);
 
-    void       encode(uint8_t *msg, int *len);
-    int        decode(uint8_t *data, int data_len);
-    uint8_t    getType(void)       { return antType;}
-    uint8_t    getChannel(void)    { return antChannel;}
-    uint8_t*   getData(void)       { return antData;}
-    uint8_t    getData(int n)      { return antData[n];}
-    int        getDataLen(void)    { return antDataLen;}
-    void       setTimestamp(void)  { ts = Clock::now(); }
+    // Copy Constructor
+    ANTMessage(const ANTMessage& obj)
+        : ANTMessage() {
+        antType = obj.antType;
+        antChannel = obj.antChannel;
+        antDataLen = obj.antDataLen;
+        antDeviceID = obj.antDeviceID;
+        ts = obj.ts;
+        for (int i=0; i < MAX_MESSAGE_SIZE; i++) {
+            antData[i] = obj.antData[i];
+        }
+    }
+
+    ANTMessage& operator=(ANTMessage other) {
+        swap(*this, other);
+        return *this;
+    }
+
+    friend void swap(ANTMessage& a, ANTMessage& b) {
+        std::swap(a.antType, b.antType);
+        std::swap(a.antChannel, b.antChannel);
+        std::swap(a.antData, b.antData);
+        std::swap(a.antDataLen, b.antDataLen);
+        std::swap(a.antDeviceID, b.antDeviceID);
+        std::swap(a.ts, b.ts);
+    }
+
+    ~ANTMessage(void);
+
+    void         encode(uint8_t *msg, int *len);
+    int          decode(uint8_t *data, int data_len);
+    uint8_t      getType(void)       { return antType;}
+    uint8_t      getChannel(void)    { return antChannel;}
+    uint8_t*     getData(void)       { return antData;}
+    uint8_t      getData(int n)      { return antData[n];}
+    int          getDataLen(void)    { return antDataLen;}
+    void         setTimestamp(void)  { ts = Clock::now(); }
     time_point<Clock>
-               getTimestamp(void)  { return ts; }
-    uint16_t   getDeviceID(void)   { return antDeviceID; }
-    uint8_t    getDeviceType(void) { return antDeviceType; }
-    uint8_t    getTransType(void)  { return antTransType; }
+                 getTimestamp(void)  { return ts; }
+    ANTDeviceID  getDeviceID(void)   { return antDeviceID; }
 
  private:
     uint8_t           antType;
     uint8_t           antChannel;
-    uint8_t           antData[MAX_MESSAGE_SIZE];
+    uint8_t*          antData;
     int               antDataLen;
-    uint16_t          antDeviceID;
-    uint8_t           antDeviceType;
-    uint8_t           antTransType;
+    ANTDeviceID       antDeviceID;
     time_point<Clock> ts;
 };
 

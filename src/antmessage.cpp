@@ -30,16 +30,18 @@
 ANTMessage::ANTMessage(void) {
     antType = 0x00;
     antChannel = 0x00;
-
     antDataLen = 0;
+
+    antData = new uint8_t[MAX_MESSAGE_SIZE];
     for (int i=0; i < MAX_MESSAGE_SIZE; i++) {
         antData[i] = 0x00;
     }
-
-    antTransType  = 0x00;
-    antDeviceID   = 0x00;
-    antDeviceType = 0x00;
 }
+
+ANTMessage::~ANTMessage(void) {
+    delete [] antData;
+}
+
 
 ANTMessage::ANTMessage(uint8_t *data, int data_len)
     : ANTMessage() {
@@ -164,13 +166,16 @@ int ANTMessage::decode(uint8_t *data, int data_len) {
         // We have an extended format
         uint8_t ext = antData[8];
         if (ext & ANT_EXT_MSG_CHAN_ID) {
-            antDeviceID  = antData[9];
-            antDeviceID |= (antData[10] << 8);
-            antDeviceType = antData[11];
-            antTransType = antData[12];
+            uint16_t deviceID;
+            deviceID  = antData[9];
+            deviceID |= (antData[10] << 8);
+            uint8_t deviceType = antData[11];
+            uint8_t transType = antData[12];
+
+            antDeviceID = ANTDeviceID(deviceID, deviceType);
 
             DEBUG_PRINT("Device ID = 0x%04X type = 0x%02X transType = 0x%02X\n",
-                    antDeviceID, antDeviceType, antTransType);
+                    deviceID, deviceType, transType);
         }
     }
 
@@ -198,7 +203,7 @@ void ANTMessage::encode(uint8_t *msg, int *len) {
 
 #ifdef DEBUG_OUTPUT
     char bytes[20000];
-    bytestream_to_string(bytes, sizeof(bytes), msg, *len);
+    bytestream_to_string(bytes, sizeof(bytes), msg, antDataLen + 5);
     DEBUG_PRINT("ANT Message : %s\n",  bytes);
 #endif
 }

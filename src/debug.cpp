@@ -27,7 +27,8 @@
 #include <stdio.h>
 #include "debug.h"
 
-void bytestream_to_string(char *out, int n_out, uint8_t *bytes, int n_bytes) {
+void bytestream_to_string(char *out, size_t n_out,
+        uint8_t *bytes, size_t n_bytes) {
     if (n_bytes == 0) {
         out[0] = 0;
         return;
@@ -35,7 +36,7 @@ void bytestream_to_string(char *out, int n_out, uint8_t *bytes, int n_bytes) {
 
     char *_dbmsg = out;
 
-    for (int i=0; i < n_bytes; i++) {
+    for (size_t i=0; i < n_bytes; i++) {
         snprintf(_dbmsg, n_out - (3 * i) - 1, "%02X:", bytes[i]);
         _dbmsg += 3;
     }

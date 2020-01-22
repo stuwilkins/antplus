@@ -34,14 +34,11 @@ using std::chrono::milliseconds;
 #include <chrono>
 #include <string>
 
+#include "antmessage.h"
 #include "debug.h"
 
-struct ANTDeviceParams {
-    int type;
-    uint8_t deviceType;
-    uint16_t devicePeriod;
-    uint8_t deviceFrequency;
-};
+using Clock = std::chrono::steady_clock;
+using std::chrono::time_point;
 
 class ANTDeviceDatum {
  public:
@@ -64,45 +61,53 @@ class ANTDeviceDatum {
 
 class ANTDevice {
  public:
-    enum {
-        // The channel types
-        TYPE_NONE = 0,
-        TYPE_HR   = 1,
-        TYPE_PWR  = 2,
-        TYPE_FEC  = 3,
-        TYPE_PAIR = 4
-    };
-    static ANTDeviceParams params[5];
-
     ANTDevice(void);
-    explicit ANTDevice(int nMeas);
+    ANTDevice(int nMeas, int nMetaMeas, const ANTDeviceID &id);
     ~ANTDevice(void);
 
+    friend bool operator== (
+            const ANTDevice &a, const ANTDevice &b) {
+        return a.devID == b.devID;
+    }
+    friend bool operator== (
+            const ANTDevice &a, const ANTDeviceID &b) {
+        return a.devID == b;
+    }
+
     void                         addDatum(int i, ANTDeviceDatum val);
-    virtual void                 parseMessage(ANTMessage *message) = 0;
+    void                         addMetaDatum(int i, float val);
+    void                         parseMessage(ANTMessage *message);
     std::vector<ANTDeviceDatum>& getTsData(int i);
     ANTDeviceDatum               getData(int i);
     std::string                  getDeviceName(void);
     std::vector<std::string>&    getValueNames(void) { return valueNames; }
     int                          getNumValues(void)  { return nValues; }
+    ANTDeviceID                  getDeviceID(void)   { return devID; }
 
  private:
-    // enum {
-    //     // DATA From Common Pages
-    // }
+    enum {
+        HW_REVISION     = 0,
+        MANUFACTURER_ID = 1,
+        MODEL_NUMBER    = 2,
+        SERIAL_NUMBER   = 3
+    };
+
     int nValues;
+    int nMetaValues;
     ANTDeviceDatum *data;
     std::vector<ANTDeviceDatum> *tsData;
+    float *metaData;
+    ANTDeviceID devID;
 
  protected:
     std::vector<std::string> valueNames;
     std::vector<std::string> metaNames;
-    std::string deviceName;
+    std::string              deviceName;
 };
 
 class ANTDeviceNONE : public ANTDevice {
  public:
-    ANTDeviceNONE(void);
+    explicit ANTDeviceNONE(const ANTDeviceID &id);
     virtual ~ANTDeviceNONE(void) {}
     void parseMessage(ANTMessage *message) {
         UNUSED(message);
@@ -127,7 +132,7 @@ class ANTDeviceFEC : public ANTDevice {
         TRAINER_TARGET_RESISTANCE = 9,
         TRAINER_TARGET_POWER      = 10
     };
-    ANTDeviceFEC(void);
+    explicit ANTDeviceFEC(const ANTDeviceID &id);
     virtual ~ANTDeviceFEC(void) {}
     void parseMessage(ANTMessage *message);
 
@@ -137,7 +142,7 @@ class ANTDeviceFEC : public ANTDevice {
 
 class ANTDevicePWR : public ANTDevice {
  public:
-    ANTDevicePWR(void);
+    explicit ANTDevicePWR(const ANTDeviceID &id);
     virtual ~ANTDevicePWR(void) {}
     void parseMessage(ANTMessage *message);
 
@@ -163,7 +168,7 @@ class ANTDevicePWR : public ANTDevice {
 
 class ANTDeviceHR : public ANTDevice {
  public:
-    ANTDeviceHR(void);
+    explicit ANTDeviceHR(const ANTDeviceID &id);
     virtual ~ANTDeviceHR(void) {}
     void parseMessage(ANTMessage *message);
 

@@ -84,7 +84,8 @@ class ANT {
     int channelProcessBroadcast(ANTMessage *m);
     int channelChangeStateTo(uint8_t chan, int state);
     int channelStart(uint8_t chan, int type,
-            uint16_t id = 0x0000, bool wait = true);
+            uint16_t id = 0x0000, bool scanning = false,
+            bool wait = true);
     ANTChannel *getChannel(uint8_t chan) {
         return &(antChannel[chan]);
     }

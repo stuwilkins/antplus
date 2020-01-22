@@ -30,8 +30,8 @@
 #include <stdint.h>
 #include <cstdio>
 
-void bytestream_to_string(char *out, int n_out,
-        uint8_t *bytes, int n_bytes);
+void bytestream_to_string(char *out, size_t n_out,
+        uint8_t *bytes, size_t n_bytes);
 
 #ifndef __FILENAME__
 #define __FILENAME__ __FILE__
