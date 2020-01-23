@@ -108,9 +108,13 @@
 #define GARMIN_USB2_VID                     0x0FCF
 #define GARMIN_USB2_PID                     0x1008
 #define GARMIN_OEM_PID                      0x1009
-//
+
 // Channel Responses
 
+#define ANT_DEVICE_HR_COMMON                0x00
+#define ANT_DEVICE_HR_OPER_TIME             0x01
+#define ANT_DEVICE_HR_MF_INFO               0x02
+#define ANT_DEVICE_HR_INFO                  0x03
 #define ANT_DEVICE_HR_PREVIOUS              0x04
 
 // Extended format settings

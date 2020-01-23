@@ -62,7 +62,7 @@ class ANTDeviceDatum {
 class ANTDevice {
  public:
     ANTDevice(void);
-    ANTDevice(int nMeas, int nMetaMeas, const ANTDeviceID &id);
+    explicit ANTDevice(const ANTDeviceID &id);
     ~ANTDevice(void);
 
     friend bool operator== (
@@ -74,32 +74,30 @@ class ANTDevice {
         return a.devID == b;
     }
 
-    void                         addDatum(int i, ANTDeviceDatum val);
-    void                         addMetaDatum(int i, float val);
-    virtual void                 parseMessage(ANTMessage *message);
-    std::vector<ANTDeviceDatum>& getTsData(int i);
-    ANTDeviceDatum               getData(int i);
-    std::string                  getDeviceName(void);
+    virtual void     parseMessage(ANTMessage *message);
+
+    int  getNumValues(void)      { return tsData.size(); }
+    int  getNumMetaValues(void)  { return metaData.size(); }
+    ANTDeviceID      getDeviceID(void)   { return devID; }
+    ANTDeviceDatum   getData(int i);
+    std::string      getDeviceName(void);
     std::vector<std::string>&    getValueNames(void) { return valueNames; }
-    int                          getNumValues(void)  { return nValues; }
-    ANTDeviceID                  getDeviceID(void)   { return devID; }
+    std::vector<ANTDeviceDatum>& getTsData(int i);
 
  private:
-    enum {
-        HW_REVISION     = 0,
-        MANUFACTURER_ID = 1,
-        MODEL_NUMBER    = 2,
-        SERIAL_NUMBER   = 3
-    };
-
-    int nValues;
-    int nMetaValues;
-    ANTDeviceDatum *data;
-    std::vector<ANTDeviceDatum> *tsData;
-    float *metaData;
+    // int nValues;
+    // int nMetaValues;
+    std::vector<ANTDeviceDatum> data;
+    std::vector<std::vector<ANTDeviceDatum>> tsData;
+    std::vector<float> metaData;
     ANTDeviceID devID;
 
  protected:
+    void addDatum(std::string name, ANTDeviceDatum val);
+    void addDatum(const char *name, ANTDeviceDatum val);
+    void addMetaDatum(std::string name, float val);
+    void addMetaDatum(const char *name, float val);
+
     std::vector<std::string> valueNames;
     std::vector<std::string> metaNames;
     std::string              deviceName;
@@ -109,29 +107,10 @@ class ANTDeviceNONE : public ANTDevice {
  public:
     explicit ANTDeviceNONE(const ANTDeviceID &id);
     virtual ~ANTDeviceNONE(void) {}
-    void parseMessage(ANTMessage *message) {
-        UNUSED(message);
-    }
-
- private:
-    uint8_t lastCommandSeq;
 };
 
 class ANTDeviceFEC : public ANTDevice {
  public:
-    enum {
-        GENERAL_INST_SPEED        = 0,
-        SETTINGS_CYCLE_LENGTH     = 1,
-        SETTINGS_RESISTANCE       = 2,
-        SETTINGS_INCLINE          = 3,
-        TRAINER_CADENCE           = 4,
-        TRAINER_ACC_POWER         = 5,
-        TRAINER_INST_POWER        = 6,
-        TRAINER_STATUS            = 7,
-        TRAINER_FLAGS             = 8,
-        TRAINER_TARGET_RESISTANCE = 9,
-        TRAINER_TARGET_POWER      = 10
-    };
     explicit ANTDeviceFEC(const ANTDeviceID &id);
     virtual ~ANTDeviceFEC(void) {}
     void parseMessage(ANTMessage *message);
@@ -145,25 +124,6 @@ class ANTDevicePWR : public ANTDevice {
     explicit ANTDevicePWR(const ANTDeviceID &id);
     virtual ~ANTDevicePWR(void) {}
     void parseMessage(ANTMessage *message);
-
- private:
-    enum {
-        BALANCE              = 0,
-        CADENCE               = 1,
-        ACC_POWER             = 2,
-        INST_POWER            = 3,
-        LEFT_TE               = 4,
-        RIGHT_TE              = 5,
-        LEFT_PS               = 6,
-        RIGHT_PS              = 7,
-        N_BATTERIES           = 8,
-        OPERATING_TIME        = 9,
-        BATTERY_VOLTAGE       = 10,
-        CRANK_LENGTH          = 11,
-        CRANK_STATUS          = 12,
-        SENSOR_STATUS         = 13,
-        PEAK_TORQUE_THRESHOLD = 14
-    };
 };
 
 class ANTDeviceHR : public ANTDevice {
@@ -173,11 +133,6 @@ class ANTDeviceHR : public ANTDevice {
     void parseMessage(ANTMessage *message);
 
  private:
-    enum {
-        HEARTRATE = 0,
-        RR_INTERVAL = 1,
-    };
-
     uint16_t hbEventTime;
     uint16_t previousHbEventTime;
     uint8_t hbCount;

@@ -24,56 +24,87 @@
 // SOFTWARE.
 //
 
+#include <iostream>
+#include <algorithm>
+
 #include "ant.h"
 #include "antdevice.h"
 #include "debug.h"
 
 ANTDevice::ANTDevice(void) {
-    nValues     = 0;
-    tsData      = nullptr;
-    data        = nullptr;
-    metaData    = nullptr;
+    // nValues     = 0;
+    // tsData      = nullptr;
+    // data        = nullptr;
+    // metaData    = nullptr;
 
-    nMetaValues = 4;
+    // nMetaValues = 4;
 
-    metaNames.push_back("HW_REVISION");
-    metaNames.push_back("MANUFACTURER_ID");
-    metaNames.push_back("MODEL_NUMBER");
-    metaNames.push_back("SERIAL_NUMBER");
+    // metaNames.push_back("HW_REVISION");
+    // metaNames.push_back("MANUFACTURER_ID");
+    // metaNames.push_back("MODEL_NUMBER");
+    // metaNames.push_back("SERIAL_NUMBER");
 }
 
-ANTDevice::ANTDevice(int nMeas, int nMetaMeas,
-        const ANTDeviceID &id)
+ANTDevice::ANTDevice(const ANTDeviceID &id)
     : ANTDevice() {
     // Create the list of values
-    nValues += nMeas;
-    nMetaValues += nMetaMeas;
+    // nValues += nMeas;
+    // nMetaValues += nMetaMeas;
     devID = id;
 
-    tsData   = new std::vector<ANTDeviceDatum>[nValues];
-    data     = new ANTDeviceDatum[nValues];
-    metaData = new float[nMetaValues];
+    // tsData   = new std::vector<ANTDeviceDatum>[nValues];
+    // data     = new ANTDeviceDatum[nValues];
+    // metaData = new float[nMetaValues];
 }
 
 ANTDevice::~ANTDevice(void) {
-    if (tsData != nullptr) {
-        delete [] tsData;
-    }
-    if (data != nullptr) {
-        delete [] data;
-    }
-    if (metaData != nullptr) {
-        delete [] metaData;
+    // if (tsData != nullptr) {
+    //     delete [] tsData;
+    // }
+    // if (data != nullptr) {
+    //     delete [] data;
+    // }
+    // if (metaData != nullptr) {
+    //     delete [] metaData;
+    // }
+}
+
+void ANTDevice::addMetaDatum(std::string name, float val) {
+    auto it = std::find(metaNames.begin(), metaNames.end(), name);
+    if (it != metaNames.end()) {
+        int i = distance(metaNames.begin(), it);
+        DEBUG_PRINT("Storing meta %s (%d)\n", name.c_str(), i);
+        metaData[i] = val;
+    } else {
+        DEBUG_PRINT("Adding meta %s\n", name.c_str());
+        metaNames.push_back(name);
+        metaData.push_back(val);
     }
 }
 
-void ANTDevice::addMetaDatum(int i, float val) {
-    metaData[i] = val;
+void ANTDevice::addMetaDatum(const char* name, float val) {
+    addMetaDatum(std::string(name), val);
 }
 
-void ANTDevice::addDatum(int i, ANTDeviceDatum val) {
-    tsData[i].push_back(val);
-    data[i] = val;
+void ANTDevice::addDatum(std::string name, ANTDeviceDatum val) {
+    auto it = std::find(valueNames.begin(), valueNames.end(), name);
+    if (it != valueNames.end()) {
+        int i = distance(valueNames.begin(), it);
+        DEBUG_PRINT("Storing %s (%d)\n", name.c_str(), i);
+        tsData[i].push_back(val);
+        data[i] = val;
+    } else {
+        DEBUG_PRINT("Adding %s\n", name.c_str());
+        valueNames.push_back(name);
+        std::vector<ANTDeviceDatum> d;
+        d.push_back(val);
+        tsData.push_back(d);
+        data.push_back(val);
+    }
+}
+
+void ANTDevice::addDatum(const char *name, ANTDeviceDatum val) {
+    addDatum(std::string(name), val);
 }
 
 std::vector<ANTDeviceDatum>& ANTDevice::getTsData(int i) {
@@ -107,9 +138,9 @@ void ANTDevice::parseMessage(ANTMessage *message) {
         modelNumber     = data[6];
         modelNumber    |= data[7];
 
-        addMetaDatum(HW_REVISION, hwRevision);
-        addMetaDatum(MANUFACTURER_ID, manufacturerID);
-        addMetaDatum(MODEL_NUMBER, modelNumber);
+        addMetaDatum("HW_REVISION", hwRevision);
+        addMetaDatum("MANUFACTURER_ID", manufacturerID);
+        addMetaDatum("MODEL_NUMBER", modelNumber);
 
         DEBUG_PRINT("COMMON_DATA, %d, %d, %d\n",
                 hwRevision, manufacturerID, modelNumber);
@@ -121,31 +152,31 @@ void ANTDevice::parseMessage(ANTMessage *message) {
         serialNumber |= (data[6] << 16);
         serialNumber |= (data[7] << 24);
 
-        addMetaDatum(SERIAL_NUMBER, serialNumber);
+        addMetaDatum("SERIAL_NUMBER", serialNumber);
 
         DEBUG_PRINT("COMMON_INFO, %d\n", serialNumber);
     }
 }
 
 ANTDeviceNONE::ANTDeviceNONE(const ANTDeviceID &id)
-    : ANTDevice(0, 0, id) {
+    : ANTDevice(id) {
     deviceName = std::string("NONE");
 }
 
 ANTDeviceFEC::ANTDeviceFEC(const ANTDeviceID &id)
-     : ANTDevice(11, 0, id) {
+     : ANTDevice(id) {
     deviceName = std::string("FE-C");
-    valueNames.push_back("GENERAL_INST_SPEED");
-    valueNames.push_back("SETTINGS_CYCLE_LENGTH");
-    valueNames.push_back("SETTINGS_RESISTANCE");
-    valueNames.push_back("SETTINGS_INCLINE");
-    valueNames.push_back("TRAINER_CADENCE");
-    valueNames.push_back("TRAINER_ACC_POWER");
-    valueNames.push_back("TRAINER_INST_POWER");
-    valueNames.push_back("TRAINER_STATUS");
-    valueNames.push_back("TRAINER_FLAGS");
-    valueNames.push_back("TRAINER_TARGET_RESISTANCE");
-    valueNames.push_back("TRAINER_TARGET_POWER");
+    // valueNames.push_back("GENERAL_INST_SPEED");
+    // valueNames.push_back("SETTINGS_CYCLE_LENGTH");
+    // valueNames.push_back("SETTINGS_RESISTANCE");
+    // valueNames.push_back("SETTINGS_INCLINE");
+    // valueNames.push_back("TRAINER_CADENCE");
+    // valueNames.push_back("TRAINER_ACC_POWER");
+    // valueNames.push_back("TRAINER_INST_POWER");
+    // valueNames.push_back("TRAINER_STATUS");
+    // valueNames.push_back("TRAINER_FLAGS");
+    // valueNames.push_back("TRAINER_TARGET_RESISTANCE");
+    // valueNames.push_back("TRAINER_TARGET_POWER");
 
     lastCommandSeq = 0xFF;
 }
@@ -169,7 +200,7 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
         _instSpeed |= (data[5] << 8);
         float instSpeed = (float)_instSpeed * 0.001;
 
-        addDatum(GENERAL_INST_SPEED, ANTDeviceDatum(instSpeed, ts));
+        addDatum("GENERAL_INST_SPEED", ANTDeviceDatum(instSpeed, ts));
 
         DEBUG_PRINT("FE-C General, %f\n", instSpeed);
 
@@ -181,9 +212,9 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
         float incline = (float)_incline * 0.01;
         float resistance = (float)data[6] * 0.5;
 
-        addDatum(SETTINGS_CYCLE_LENGTH, ANTDeviceDatum(cycleLength, ts));
-        addDatum(SETTINGS_RESISTANCE, ANTDeviceDatum(resistance, ts));
-        addDatum(SETTINGS_INCLINE, ANTDeviceDatum(incline, ts));
+        addDatum("SETTINGS_CYCLE_LENGTH", ANTDeviceDatum(cycleLength, ts));
+        addDatum("SETTINGS_RESISTANCE", ANTDeviceDatum(resistance, ts));
+        addDatum("SETTINGS_INCLINE", ANTDeviceDatum(incline, ts));
 
         DEBUG_PRINT("FE-C General Data, %f, %f, %f\n",
                 cycleLength, resistance, incline);
@@ -199,11 +230,11 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
         uint8_t trainerStatus = (data[6] >> 4);
         uint8_t trainerFlags = data[7] & 0x0F;
 
-        addDatum(TRAINER_CADENCE, ANTDeviceDatum((float)cadence, ts));
-        addDatum(TRAINER_ACC_POWER, ANTDeviceDatum((float)accPower, ts));
-        addDatum(TRAINER_INST_POWER, ANTDeviceDatum((float)instPower, ts));
-        addDatum(TRAINER_STATUS, ANTDeviceDatum((float)trainerStatus, ts));
-        addDatum(TRAINER_FLAGS, ANTDeviceDatum((float)trainerFlags, ts));
+        addDatum("TRAINER_CADENCE", ANTDeviceDatum((float)cadence, ts));
+        addDatum("TRAINER_ACC_POWER", ANTDeviceDatum((float)accPower, ts));
+        addDatum("TRAINER_INST_POWER", ANTDeviceDatum((float)instPower, ts));
+        addDatum("TRAINER_STATUS", ANTDeviceDatum((float)trainerStatus, ts));
+        addDatum("TRAINER_FLAGS", ANTDeviceDatum((float)trainerFlags, ts));
 
         DEBUG_PRINT("FE-C Trainer Data, %d, %d, %d, 0x%02X, 0x%02X\n",
                 cadence, accPower, instPower, trainerStatus, trainerFlags);
@@ -219,7 +250,7 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
                 if (data[1] == ANT_DEVICE_FEC_COMMAND_RESISTANCE) {
                     float resistance = (float)data[7] * 0.5;
 
-                    addDatum(TRAINER_TARGET_RESISTANCE,
+                    addDatum("TRAINER_TARGET_RESISTANCE",
                             ANTDeviceDatum(resistance, ts));
 
                     DEBUG_PRINT("FE-C Target Resistance, %f, %d\n",
@@ -231,7 +262,7 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
                     _pwr |= data[6];
                     float pwr = _pwr * 0.25;
 
-                    addDatum(TRAINER_TARGET_POWER,
+                    addDatum("TRAINER_TARGET_POWER",
                             ANTDeviceDatum(pwr, ts));
 
                     DEBUG_PRINT("FE-C Target Power, %f, %d\n",
@@ -250,23 +281,23 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
 }
 
 ANTDevicePWR::ANTDevicePWR(const ANTDeviceID &id)
-    : ANTDevice(15, 0, id) {
+    : ANTDevice(id) {
     deviceName = std::string("POWER");
-    valueNames.push_back("BALANCE");
-    valueNames.push_back("CADENCE");
-    valueNames.push_back("ACC_POWER");
-    valueNames.push_back("INST_POWER");
-    valueNames.push_back("LEFT_TE");
-    valueNames.push_back("RIGHT_TE");
-    valueNames.push_back("LEFT_PS");
-    valueNames.push_back("RIGHT_PS");
-    valueNames.push_back("N_BATTERIES");
-    valueNames.push_back("OPERATING_TIME");
-    valueNames.push_back("BATTERY_VOLTAGE");
-    valueNames.push_back("CRANK_LENGTH");
-    valueNames.push_back("CRANK_STATUS");
-    valueNames.push_back("SENSOR_STATUS");
-    valueNames.push_back("PEAK_TORQUE_THRESHOLD");
+    // valueNames.push_back("BALANCE");
+    // valueNames.push_back("CADENCE");
+    // valueNames.push_back("ACC_POWER");
+    // valueNames.push_back("INST_POWER");
+    // valueNames.push_back("LEFT_TE");
+    // valueNames.push_back("RIGHT_TE");
+    // valueNames.push_back("LEFT_PS");
+    // valueNames.push_back("RIGHT_PS");
+    // valueNames.push_back("N_BATTERIES");
+    // valueNames.push_back("OPERATING_TIME");
+    // valueNames.push_back("BATTERY_VOLTAGE");
+    // valueNames.push_back("CRANK_LENGTH");
+    // valueNames.push_back("CRANK_STATUS");
+    // valueNames.push_back("SENSOR_STATUS");
+    // valueNames.push_back("PEAK_TORQUE_THRESHOLD");
 }
 
 void ANTDevicePWR::parseMessage(ANTMessage *message) {
@@ -286,18 +317,18 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
         if ((balance & 0x80) && (balance != 0xFF)) {
             // We have balance data
             balance = balance & 0x7F;
-            addDatum(BALANCE, ANTDeviceDatum(balance, ts));
+            addDatum("BALANCE", ANTDeviceDatum(balance, ts));
         }
         uint8_t cadence = data[3];
-        addDatum(CADENCE, ANTDeviceDatum(cadence, ts));
+        addDatum("CADENCE", ANTDeviceDatum(cadence, ts));
 
         uint16_t accPower = data[4];
         accPower |= (data[5] << 8);
-        addDatum(ACC_POWER, ANTDeviceDatum(accPower, ts));
+        addDatum("ACC_POWER", ANTDeviceDatum(accPower, ts));
 
         uint16_t instPower = data[6];
         instPower |= (data[7] << 8);
-        addDatum(INST_POWER, ANTDeviceDatum(instPower, ts));
+        addDatum("INST_POWER", ANTDeviceDatum(instPower, ts));
 
         DEBUG_PRINT("POWER Standard, %d, %d, %d, %d\n", balance, cadence,
                 accPower, instPower);
@@ -307,10 +338,10 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
         float leftPS = (float)data[4] * 0.5;
         float rightPS = (float)data[5] * 0.5;
 
-        addDatum(LEFT_TE, ANTDeviceDatum(leftTE, ts));
-        addDatum(RIGHT_TE, ANTDeviceDatum(rightTE, ts));
-        addDatum(LEFT_PS, ANTDeviceDatum(leftPS, ts));
-        addDatum(RIGHT_PS, ANTDeviceDatum(rightPS, ts));
+        addDatum("LEFT_TE", ANTDeviceDatum(leftTE, ts));
+        addDatum("RIGHT_TE", ANTDeviceDatum(rightTE, ts));
+        addDatum("LEFT_PS", ANTDeviceDatum(leftPS, ts));
+        addDatum("RIGHT_PS", ANTDeviceDatum(rightPS, ts));
         DEBUG_PRINT("POWER TEPS, %f, %f, %f, %f\n", leftTE, rightTE,
                 leftPS, rightPS);
     } else if (data[0] == ANT_DEVICE_POWER_BATTERY) {
@@ -320,9 +351,9 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
         operatingTime |= (data[5] << 16);
         uint8_t batteryVoltage = data[6];
 
-        addDatum(N_BATTERIES, ANTDeviceDatum(nBatteries, ts));
-        addDatum(OPERATING_TIME, ANTDeviceDatum(operatingTime, ts));
-        addDatum(BATTERY_VOLTAGE, ANTDeviceDatum(batteryVoltage, ts));
+        addDatum("N_BATTERIES", ANTDeviceDatum(nBatteries, ts));
+        addDatum("OPERATING_TIME", ANTDeviceDatum(operatingTime, ts));
+        addDatum("BATTERY_VOLTAGE", ANTDeviceDatum(batteryVoltage, ts));
 
         DEBUG_PRINT("POWER Battery, %d, %d, %d\n", nBatteries,
                 operatingTime, batteryVoltage);
@@ -332,14 +363,16 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
             crankLength = (crankLength * 0.5) + 110.0;
             uint8_t crankStatus = data[5] & 0x03;
             uint8_t sensorStatus = (data[6] >> 3) & 0x01;
+
             DEBUG_PRINT("POWER Params Crank, %f, %d, %d\n",
                     crankLength, crankStatus, sensorStatus);
-            addDatum(CRANK_LENGTH, ANTDeviceDatum(crankLength, ts));
-            addDatum(CRANK_STATUS, ANTDeviceDatum(crankStatus, ts));
-            addDatum(SENSOR_STATUS, ANTDeviceDatum(sensorStatus, ts));
+
+            addDatum("CRANK_LENGTH", ANTDeviceDatum(crankLength, ts));
+            addDatum("CRANK_STATUS", ANTDeviceDatum(crankStatus, ts));
+            addDatum("SENSOR_STATUS", ANTDeviceDatum(sensorStatus, ts));
         } else if (data[1] == ANT_DEVICE_POWER_PARAMS_TORQUE) {
             float peakTorqueThresh = (float)data[7] * 0.5;
-            addDatum(PEAK_TORQUE_THRESHOLD,
+            addDatum("PEAK_TORQUE_THRESHOLD",
                     ANTDeviceDatum(peakTorqueThresh, ts));
             DEBUG_PRINT("POWER Params Torque, %f\n", peakTorqueThresh);
         } else {
@@ -351,7 +384,7 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
 }
 
 ANTDeviceHR::ANTDeviceHR(const ANTDeviceID &id)
-     : ANTDevice(2, 0, id) {
+    : ANTDevice(id) {
     hbEventTime = 0;
     previousHbEventTime = 0;
     hbCount = 0;
@@ -359,8 +392,15 @@ ANTDeviceHR::ANTDeviceHR(const ANTDeviceID &id)
     lastToggleBit = 0xFF;
 
     deviceName = std::string("HEARTRATE");
-    valueNames.push_back("HEART_RATE");
-    valueNames.push_back("RR_INTERVAL");
+
+    // valueNames.push_back("HEART_RATE");
+    // valueNames.push_back("RR_INTERVAL");
+
+    // metaNames.push_back("HR_HW_VERSION");
+    // metaNames.push_back("HR_SW_VERSION");
+    // metaNames.push_back("HR_MODEL_NUMBER");
+    // metaNames.push_back("HR_MANUFACTURER");
+    // metaNames.push_back("HR_SERIAL_NUMBER");
 }
 
 void ANTDeviceHR::parseMessage(ANTMessage *message) {
@@ -393,17 +433,20 @@ void ANTDeviceHR::parseMessage(ANTMessage *message) {
 
     lastToggleBit = toggleBit;
 
-    addDatum(HEARTRATE, ANTDeviceDatum(heartRate, ts));
+    addDatum("HEARTRATE", ANTDeviceDatum(heartRate, ts));
 
-    if ((data[0] & 0x7F)  == ANT_DEVICE_HR_PREVIOUS) {
+    uint8_t page = data[0] & 0x7F;
+
+    if (page == ANT_DEVICE_HR_PREVIOUS) {
         previousHbEventTime = data[2];
         previousHbEventTime |= (data[3] << 8);
         float rrInterval = (hbEventTime - previousHbEventTime);
         rrInterval *= (1000 / 1024);
-        addDatum(RR_INTERVAL, ANTDeviceDatum(rrInterval, ts));
+        addDatum("RR_INTERVAL", ANTDeviceDatum(rrInterval, ts));
         DEBUG_PRINT("HR Previous, %d, %d, %f\n", previousHbEventTime,
                 hbEventTime, rrInterval);
-    } else {
+    } else if (page == ANT_DEVICE_HR_INFO) {
+    } else if (page != ANT_DEVICE_HR_COMMON) {
         DEBUG_PRINT("Unknown HR Page 0x%02X\n", data[0] & 0x7F);
     }
 }
