@@ -76,7 +76,7 @@ class ANTDevice {
 
     void                         addDatum(int i, ANTDeviceDatum val);
     void                         addMetaDatum(int i, float val);
-    void                         parseMessage(ANTMessage *message);
+    virtual void                 parseMessage(ANTMessage *message);
     std::vector<ANTDeviceDatum>& getTsData(int i);
     ANTDeviceDatum               getData(int i);
     std::string                  getDeviceName(void);

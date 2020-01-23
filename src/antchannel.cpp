@@ -150,21 +150,5 @@ void ANTChannel::parseMessage(ANTMessage *message) {
         device = addDevice(&devID);
     }
 
-    switch (device->getDeviceID().getType()) {
-        case ANT_DEVICE_NONE:
-            ((ANTDeviceNONE*)device)->parseMessage(message);
-            break;
-        case ANT_DEVICE_HR:
-            ((ANTDeviceHR*)device)->parseMessage(message);
-            break;
-        case ANT_DEVICE_PWR:
-            ((ANTDevicePWR*)device)->parseMessage(message);
-            break;
-        case ANT_DEVICE_FEC:
-            ((ANTDeviceFEC*)device)->parseMessage(message);
-            break;
-        default:
-            device->parseMessage(message);
-            break;
-    }
+    device->parseMessage(message);
 }
