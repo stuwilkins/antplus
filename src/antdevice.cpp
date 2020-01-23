@@ -30,10 +30,16 @@
 
 ANTDevice::ANTDevice(void) {
     nValues     = 0;
-    nMetaValues = 0;
     tsData      = nullptr;
     data        = nullptr;
     metaData    = nullptr;
+
+    nMetaValues = 4;
+
+    metaNames.push_back("HW_REVISION");
+    metaNames.push_back("MANUFACTURER_ID");
+    metaNames.push_back("MODEL_NUMBER");
+    metaNames.push_back("SERIAL_NUMBER");
 }
 
 ANTDevice::ANTDevice(int nMeas, int nMetaMeas,
@@ -43,11 +49,6 @@ ANTDevice::ANTDevice(int nMeas, int nMetaMeas,
     nValues += nMeas;
     nMetaValues += nMetaMeas;
     devID = id;
-
-    metaNames.push_back("HW_REVISION");
-    metaNames.push_back("MANUFACTURER_ID");
-    metaNames.push_back("MODEL_NUMBER");
-    metaNames.push_back("SERIAL_NUMBER");
 
     tsData   = new std::vector<ANTDeviceDatum>[nValues];
     data     = new ANTDeviceDatum[nValues];
@@ -94,8 +95,6 @@ void ANTDevice::parseMessage(ANTMessage *message) {
     if (dataLen < 8) {
         return;
     }
-
-    DEBUG_COMMENT("Parsing message\n");
 
     if (data[0] == ANT_DEVICE_COMMON_DATA) {
         uint8_t hwRevision;
@@ -163,8 +162,6 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
         DEBUG_COMMENT("Invalid FEC Message\n");
         return;
     }
-
-    DEBUG_COMMENT("Parsing message\n");
 
     if (data[0] == ANT_DEVICE_FEC_GENERAL) {
         uint16_t _instSpeed;
@@ -284,8 +281,6 @@ void ANTDevicePWR::parseMessage(ANTMessage *message) {
         return;
     }
 
-    DEBUG_COMMENT("Parsing message\n");
-
     if (data[0] == ANT_DEVICE_POWER_STANDARD) {
         uint8_t balance = data[2];
         if ((balance & 0x80) && (balance != 0xFF)) {
@@ -379,8 +374,6 @@ void ANTDeviceHR::parseMessage(ANTMessage *message) {
         DEBUG_COMMENT("Invalid HR Message\n");
         return;
     }
-
-    DEBUG_COMMENT("Parsing message\n");
 
     // Do the common section (independant of page no)
 
