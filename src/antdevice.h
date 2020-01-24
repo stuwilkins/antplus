@@ -76,13 +76,30 @@ class ANTDevice {
 
     virtual void     parseMessage(ANTMessage *message);
 
-    int  getNumValues(void)      { return tsData.size(); }
-    int  getNumMetaValues(void)  { return metaData.size(); }
     ANTDeviceID      getDeviceID(void)   { return devID; }
-    ANTDeviceDatum   getData(int i);
-    std::string      getDeviceName(void);
-    std::vector<std::string>&    getValueNames(void) { return valueNames; }
-    std::vector<ANTDeviceDatum>& getTsData(int i);
+    std::string&     getDeviceName(void) { return deviceName; }
+
+    std::vector<std::string>&    getValueNames(void) {
+        return valueNames;
+    }
+    std::vector<std::string>&    getMetaNames(void) {
+        return metaNames;
+    }
+    std::vector<ANTDeviceDatum>& getTsData(int i) {
+        return tsData[i];
+    }
+    std::vector<std::vector<ANTDeviceDatum>>& getTsData(void) {
+        return tsData;
+    }
+    ANTDeviceDatum getData(int i) {
+        return data[i];
+    }
+    std::vector<ANTDeviceDatum>& getData(void) {
+        return data;
+    }
+    std::vector<float>& getMetaData(void) {
+        return metaData;
+    }
 
  private:
     std::vector<ANTDeviceDatum> data;

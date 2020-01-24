@@ -53,6 +53,7 @@ int write_data(ANT *antusb, std::string filename) {
 
     file.createGroup("/DATA");
     file.createGroup("/TIMESTAMP");
+    file.createGroup("/METADATA");
 
     // Cycle through each channel
     for (int i=0; i < antusb->getNumChannels(); i++) {
@@ -64,29 +65,31 @@ int write_data(ANT *antusb, std::string filename) {
                         dev->getDeviceID().getID());
 
                 DEBUG_PRINT("Processing Channel %d "
-                        "(numValues = %d, devName = %s)\n",
-                        i, dev->getNumValues(), devName.c_str());
+                        "(devName = %s)\n",
+                        i, devName.c_str());
 
                 file.createGroup("/DATA/" + devName);
                 file.createGroup("/TIMESTAMP/" + devName);
+                file.createGroup("/METADATA/" + devName);
 
-                for (int j=0; j < dev->getNumValues(); j++) {
-                    DEBUG_PRINT("Processing value %d\n", j);
-                    // This is for each value
-                    // For the values create an array
-                    int64_t size = dev->getTsData(j).size();
-                    if (size) {
+                auto tsData = dev->getTsData();
+                auto valueNames = dev->getValueNames();
+                auto values = tsData.begin();
+                auto names  = valueNames.begin();
+
+                for (; values != tsData.end(); values++, names++) {
+                    if ((*values).size()) {
                         DEBUG_PRINT("Channel %d Datapoints %ld\n",
-                                i, size);
+                                i, (*values).size());
 
                         hsize_t dimsf[1];
-                        dimsf[0] = size;
+                        dimsf[0] = (*values).size();
 
                         // First do the values
 
-                        float *val = new float[size];
-                        for (int i = 0; i < size; i++) {
-                            val[i] = dev->getTsData(j)[i].getValue();
+                        float *val = new float[(*values).size()];
+                        for (uint64_t i = 0; i < (*values).size(); i++) {
+                            val[i] = (*values)[i].getValue();
                         }
 
                         H5::DataSpace dataspace(1, dimsf);
@@ -94,7 +97,7 @@ int write_data(ANT *antusb, std::string filename) {
                         datatype.setOrder(H5T_ORDER_LE);
 
                         std::string name = "/DATA/" + devName;
-                        name = name + "/" + dev->getValueNames()[j];
+                        name = name + "/" + (*names);
                         DEBUG_PRINT("Writing node %s\n", name.c_str());
 
                         H5::DataSet dataset = file.createDataSet(name,
@@ -107,22 +110,41 @@ int write_data(ANT *antusb, std::string filename) {
                         H5::IntType tdatatype(H5::PredType::NATIVE_UINT64);
                         tdatatype.setOrder(H5T_ORDER_LE);
 
-                        uint64_t *tval = new uint64_t[size];
-                        for (int i = 0; i < size; i++) {
+                        uint64_t *tval = new uint64_t[(*values).size()];
+                        for (auto val : (*values)) {
                             auto ms = std::chrono::duration_cast
                                 <std::chrono::milliseconds>
-                                (dev->getTsData(j)[i].getTimestamp()
+                                (val.getTimestamp()
                                  - antusb->getStartTime());
                             tval[i] = ms.count();
                         }
 
                         name = "/TIMESTAMP/" + devName;
-                        name = name + "/" + dev->getValueNames()[j];
+                        name = name + "/" + *names;
                         DEBUG_PRINT("Writing node %s\n", name.c_str());
 
                         H5::DataSet tdataset = file.createDataSet(name,
                                 tdatatype, tdataspace);
                         tdataset.write(tval, H5::PredType::NATIVE_UINT64);
+
+                        dimsf[0] = 1;
+                        H5::DataSpace mdataspace(1, dimsf);
+                        H5::IntType mdatatype(H5::PredType::NATIVE_FLOAT);
+                        mdatatype.setOrder(H5T_ORDER_LE);
+
+                        auto mNames = dev->getMetaNames();
+                        auto mValues = dev->getMetaData();
+                        auto iMNames = mNames.begin();
+                        auto iMValues = mValues.begin();
+                        for (; iMNames != mNames.end(); iMNames++, iMValues++) {
+                            name = "/METADATA/" + devName;
+                            name = name + "/" + *iMNames;
+                            DEBUG_PRINT("Writing node %s\n", name.c_str());
+                            H5::DataSet mdataset = file.createDataSet(name,
+                                    mdatatype, mdataspace);
+                            mdataset.write(&(*iMValues),
+                                    H5::PredType::NATIVE_FLOAT);
+                        }
 
                         delete [] tval;
                         delete [] val;

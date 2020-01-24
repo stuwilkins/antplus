@@ -80,18 +80,6 @@ void ANTDevice::addDatum(const char *name, ANTDeviceDatum val) {
     addDatum(std::string(name), val);
 }
 
-std::vector<ANTDeviceDatum>& ANTDevice::getTsData(int i) {
-    return tsData[i];
-}
-
-ANTDeviceDatum ANTDevice::getData(int i) {
-    return data[i];
-}
-
-std::string ANTDevice::getDeviceName(void) {
-    return deviceName;
-}
-
 void ANTDevice::parseMessage(ANTMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
