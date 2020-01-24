@@ -71,9 +71,10 @@ class ANTChannel {
     };
 
     ANTChannel(void);
+    ANTChannel(int type, int num);
     ~ANTChannel(void);
-    explicit ANTChannel(int type);
 
+    int        getChannelNum(void)          { return channelNum; }
     void       setType(int t);
     uint8_t    getNetwork(void)             { return network; }
     void       setExtended(uint8_t ext)     { extended = ext; }
@@ -102,6 +103,7 @@ class ANTChannel {
     uint8_t  network;
     int      currentState;
     uint8_t  channelType;
+    int      channelNum;
     uint16_t deviceId;
     uint8_t  deviceType;
     uint16_t devicePeriod;

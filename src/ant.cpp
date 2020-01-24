@@ -33,18 +33,16 @@
 #include "antchannel.h"
 #include "debug.h"
 
-ANT::ANT(ANTInterface *interface) {
-    numChannels   = 8;
+ANT::ANT(ANTInterface *interface, int nChannels) {
     threadRun     = false;
     pollTime      = 2000;  // ms
     extMessages   = true;
 
     iface = interface;
 
-    DEBUG_PRINT("Creating %d channels.\n", numChannels);
-    antChannel = new ANTChannel[numChannels];
-    for (int i=0; i < numChannels; i++) {
-        antChannel[i].setType(ANTChannel::TYPE_NONE);
+    DEBUG_PRINT("Creating %d channels.\n", nChannels);
+    for (int i=0; i < nChannels; i++) {
+        antChannel.push_back(ANTChannel(ANTChannel::TYPE_NONE, i));
     }
 
     // Set the start time
@@ -52,9 +50,9 @@ ANT::ANT(ANTInterface *interface) {
 }
 
 ANT::~ANT(void) {
-    if (antChannel != nullptr) {
-        delete [] antChannel;
-    }
+    // if (antChannel != nullptr) {
+    //     delete [] antChannel;
+    // }
 }
 
 int ANT::reset(void) {
@@ -196,14 +194,13 @@ void* ANT::pollerThread(void) {
             <std::chrono::milliseconds> (now - pollStart);
 
         if (poll.count() >= getPollTime()) {
-            for (int r=0; r < getNumChannels(); r++) {
-                ANTChannel *chan = getChannel(r);
-
-                int state = chan->getState();
+            for (ANTChannel& chan : antChannel) {
+                int state = chan.getState();
                 if ((state == ANTChannel::STATE_OPEN_UNPAIRED) ||
                         (state == ANTChannel::STATE_OPEN_PAIRED)) {
-                    if (chan->getType() == ANTChannel::TYPE_FEC) {
-                        requestDataPage(r, ANT_DEVICE_COMMON_STATUS);
+                    if (chan.getType() == ANTChannel::TYPE_FEC) {
+                        requestDataPage(chan.getChannelNum(),
+                                ANT_DEVICE_COMMON_STATUS);
                     }
                 }
             }
@@ -252,29 +249,29 @@ void* ANT::listenerThread(void) {
 
 int ANT::channelChangeStateTo(uint8_t chan, int state) {
     DEBUG_PRINT("chan = %d, state = %d\n", chan, state);
-    ANTChannel *antChannel = getChannel(chan);
+    ANTChannel& antChannel = getChannel(chan);
     switch (state) {
         case ANTChannel::STATE_ASSIGNED:
             assignChannel(chan,
-                    antChannel->getChannelType(),
-                    antChannel->getNetwork(),
-                    antChannel->getExtended());
+                    antChannel.getChannelType(),
+                    antChannel.getNetwork(),
+                    antChannel.getExtended());
             break;
         case ANTChannel::STATE_ID_SET:
-            setChannelID(chan, antChannel->getDeviceID(),
-                    antChannel->getDeviceType(), 0);
+            setChannelID(chan, antChannel.getDeviceID(),
+                    antChannel.getDeviceType(), 0);
             break;
         case ANTChannel::STATE_SET_TIMEOUT:
             setSearchTimeout(chan,
-                    antChannel->getSearchTimeout());
+                    antChannel.getSearchTimeout());
             break;
         case ANTChannel::STATE_SET_PERIOD:
             setChannelPeriod(chan,
-                    antChannel->getDevicePeriod());
+                    antChannel.getDevicePeriod());
             break;
         case ANTChannel::STATE_SET_FREQ:
             setChannelFreq(chan,
-                    antChannel->getDeviceFrequency());
+                    antChannel.getDeviceFrequency());
             break;
         case ANTChannel::STATE_OPEN_UNPAIRED:
             openChannel(chan);
@@ -290,22 +287,22 @@ int ANT::channelStart(uint8_t chan, int type,
         uint16_t id, bool scanning, bool wait) {
     // Start a channel config
 
-    ANTChannel *antChannel = getChannel(chan);
-    antChannel->setDeviceID(id);
-    antChannel->setType(type);
-    antChannel->setChannelType(CHANNEL_TYPE_RX);
+    ANTChannel& antChannel = getChannel(chan);
+    antChannel.setDeviceID(id);
+    antChannel.setType(type);
+    antChannel.setChannelType(CHANNEL_TYPE_RX);
 
     if (scanning) {
-        antChannel->setExtended(CHANNEL_TYPE_EXT_BACKGROUND_SCAN);
+        antChannel.setExtended(CHANNEL_TYPE_EXT_BACKGROUND_SCAN);
     }
 
     // Claim the channel.
 
-    if (antChannel->getState() !=
+    if (antChannel.getState() !=
             ANTChannel::STATE_IDLE) {
         DEBUG_PRINT("Cannot start channel when not IDLE"
         "(current state = %d)\n",
-                antChannel->getState());
+                antChannel.getState());
         return ERROR;
     }
 
@@ -317,11 +314,11 @@ int ANT::channelStart(uint8_t chan, int type,
     // TODO(swilkins) : We should add a timeout
 
     if (wait) {
-        int state = antChannel->getState();
+        int state = antChannel.getState();
         while ((state != ANTChannel::STATE_OPEN_UNPAIRED)
                 && (state != ANTChannel::STATE_OPEN_PAIRED)) {
             usleep(SLEEP_DURATION);
-            state = antChannel->getState();
+            state = antChannel.getState();
         }
     }
 
@@ -348,34 +345,34 @@ int ANT::channelProcessEvent(ANTMessage *m) {
     uint8_t chan = m->getChannel();
     uint8_t commandCode = m->getData(0);
 
-    ANTChannel *antChan = getChannel(m->getChannel());
+    ANTChannel &antChannel = getChannel(m->getChannel());
 
     if (commandCode != 0x01) {
         switch (commandCode) {
             case ANT_ASSIGN_CHANNEL:
-                antChan->setState(ANTChannel::STATE_ASSIGNED);
+                antChannel.setState(ANTChannel::STATE_ASSIGNED);
                 channelChangeStateTo(chan, ANTChannel::STATE_ID_SET);
                 break; case ANT_CHANNEL_ID:
-                antChan->setState(ANTChannel::STATE_ID_SET);
+                antChannel.setState(ANTChannel::STATE_ID_SET);
                 channelChangeStateTo(chan, ANTChannel::STATE_SET_TIMEOUT);
                 break;
             case ANT_LP_SEARCH_TIMEOUT:
-                antChan->setState(
+                antChannel.setState(
                         ANTChannel::STATE_SET_TIMEOUT);
                 channelChangeStateTo(chan, ANTChannel::STATE_SET_PERIOD);
                 break;
             case ANT_CHANNEL_PERIOD:
-                antChan->setState(ANTChannel::STATE_SET_PERIOD);
+                antChannel.setState(ANTChannel::STATE_SET_PERIOD);
                 channelChangeStateTo(chan, ANTChannel::STATE_SET_FREQ);
                 break;
             case ANT_CHANNEL_FREQUENCY:
-                antChan->setState(ANTChannel::STATE_SET_FREQ);
+                antChannel.setState(ANTChannel::STATE_SET_FREQ);
                 channelChangeStateTo(chan,
                         ANTChannel::STATE_OPEN_UNPAIRED);
                 break;
             case ANT_OPEN_CHANNEL:
                 // Do nothing, but set state
-                antChan->setState(
+                antChannel.setState(
                         ANTChannel::STATE_OPEN_UNPAIRED);
                 break;
             default:
@@ -387,7 +384,7 @@ int ANT::channelProcessEvent(ANTMessage *m) {
         switch (eventCode) {
             case EVENT_RX_SEARCH_TIMEOUT:
                 DEBUG_PRINT("Search timeout on channel %d\n", chan);
-                antChan->setState(ANTChannel::STATE_OPEN_UNPAIRED);
+                antChannel.setState(ANTChannel::STATE_OPEN_UNPAIRED);
                 break;
             case EVENT_RX_FAIL:
                 DEBUG_PRINT("RX Failed on channel %d\n", chan);
@@ -413,6 +410,6 @@ int ANT::channelProcessEvent(ANTMessage *m) {
 int ANT::channelProcessBroadcast(ANTMessage *m) {
     // Parse the ID
     uint8_t chan = m->getChannel();
-    getChannel(chan)->parseMessage(m);
+    getChannel(chan).parseMessage(m);
     return NOERROR;
 }

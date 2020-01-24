@@ -37,6 +37,7 @@ ANTChannel::ANTChannel(void) {
     searchTimeout = 0xFF;
     channelType = CHANNEL_TYPE_RX;
     extended = 0x00;
+    channelNum = 0;
 
     // The state of this channel
     currentState = STATE_IDLE;
@@ -44,8 +45,9 @@ ANTChannel::ANTChannel(void) {
     type = TYPE_NONE;
 }
 
-ANTChannel::ANTChannel(int type)
+ANTChannel::ANTChannel(int type, int num)
     : ANTChannel() {
+    channelNum = num;
     setType(type);
 }
 

@@ -61,7 +61,7 @@ class ANT {
         NOERROR = 0,
         ERROR = -1
     };
-    explicit ANT(ANTInterface *iface);
+    explicit ANT(ANTInterface *iface, int nChannels = 8);
     ~ANT(void);
     int reset(void);
     int setNetworkKey(uint8_t net);
@@ -86,26 +86,25 @@ class ANT {
     int channelStart(uint8_t chan, int type,
             uint16_t id = 0x0000, bool scanning = false,
             bool wait = true);
-    ANTChannel *getChannel(uint8_t chan) {
-        return &(antChannel[chan]);
+    ANTChannel& getChannel(uint8_t chan) {
+        return (antChannel[chan]);
     }
-    int  getNumChannels(void) { return numChannels; }
+    std::vector<ANTChannel>& getChannels(void) {
+        return antChannel;
+    }
     int  getPollTime(void)    { return pollTime; }
     void setPollTime(int t)   { pollTime = t; }
     time_point<Clock> getStartTime(void) { return startTime; }
 
- protected:
-    time_point<Clock> startTime;
-
  private:
     ANTInterface *iface;
-    int numChannels;
-    ANTChannel *antChannel;
+    std::vector<ANTChannel> antChannel;
     pthread_t listenerId;
     pthread_t pollerId;
     bool threadRun;
     int pollTime;
     bool extMessages;
+    time_point<Clock> startTime;
 
     void* listenerThread(void);
     void* pollerThread(void);

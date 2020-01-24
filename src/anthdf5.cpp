@@ -56,9 +56,8 @@ int write_data(ANT *antusb, std::string filename) {
     file.createGroup("/METADATA");
 
     // Cycle through each channel
-    for (int i=0; i < antusb->getNumChannels(); i++) {
-        ANTChannel *chan = antusb->getChannel(i);
-        for (auto dev : chan->getDeviceList()) {
+    for (ANTChannel& chan : antusb->getChannels()) {
+        for (auto dev : chan.getDeviceList()) {
             if (dev != nullptr) {
                 std::string devName = dev->getDeviceName() + '_';
                 devName = devName + std::to_string(
@@ -66,7 +65,7 @@ int write_data(ANT *antusb, std::string filename) {
 
                 DEBUG_PRINT("Processing Channel %d "
                         "(devName = %s)\n",
-                        i, devName.c_str());
+                        chan.getChannelNum(), devName.c_str());
 
                 file.createGroup("/DATA/" + devName);
                 file.createGroup("/TIMESTAMP/" + devName);
@@ -77,7 +76,8 @@ int write_data(ANT *antusb, std::string filename) {
                     auto valueName = tsDataPair.first;
                     if (values.size()) {
                         DEBUG_PRINT("Channel %d Name %s Datapoints %ld\n",
-                                i, valueName.c_str(), values.size());
+                                chan.getChannelNum(),
+                                valueName.c_str(), values.size());
 
                         hsize_t dimsf[1];
                         dimsf[0] = values.size();
@@ -109,10 +109,10 @@ int write_data(ANT *antusb, std::string filename) {
                         tdatatype.setOrder(H5T_ORDER_LE);
 
                         uint64_t *tval = new uint64_t[values.size()];
-                        for (auto val : values) {
+                        for (uint64_t i=0; i < values.size(); i++) {
                             auto ms = std::chrono::duration_cast
                                 <std::chrono::milliseconds>
-                                (val.getTimestamp()
+                                (values[i].getTimestamp()
                                  - antusb->getStartTime());
                             tval[i] = ms.count();
                         }
