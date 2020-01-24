@@ -30,6 +30,8 @@
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
 
+#include <pthread.h>
+
 #include <vector>
 #include <chrono>
 #include <string>
@@ -74,10 +76,21 @@ class ANTDevice {
         return a.devID == b;
     }
 
-    virtual void     parseMessage(ANTMessage *message);
+    void lock(void) {
+        pthread_mutex_lock(&thread_lock);
+    }
+    void unlock(void) {
+        pthread_mutex_unlock(&thread_lock);
+    }
 
-    ANTDeviceID      getDeviceID(void)   { return devID; }
-    std::string&     getDeviceName(void) { return deviceName; }
+    void parseMessage(ANTMessage *message) {
+        pthread_mutex_lock(&thread_lock);
+        processMessage(message);
+        pthread_mutex_unlock(&thread_lock);
+    }
+
+    ANTDeviceID  getDeviceID(void)   { return devID; }
+    std::string& getDeviceName(void) { return deviceName; }
 
     std::vector<std::string>&    getValueNames(void) {
         return valueNames;
@@ -106,8 +119,11 @@ class ANTDevice {
     std::vector<std::vector<ANTDeviceDatum>> tsData;
     std::vector<float> metaData;
     ANTDeviceID devID;
+    pthread_mutex_t thread_lock;
 
  protected:
+    virtual void processMessage(ANTMessage *message);
+
     void addDatum(std::string name, ANTDeviceDatum val);
     void addDatum(const char *name, ANTDeviceDatum val);
     void addMetaDatum(std::string name, float val);
@@ -128,7 +144,7 @@ class ANTDeviceFEC : public ANTDevice {
  public:
     explicit ANTDeviceFEC(const ANTDeviceID &id);
     virtual ~ANTDeviceFEC(void) {}
-    void parseMessage(ANTMessage *message);
+    void processMessage(ANTMessage *message);
 
  private:
     uint8_t lastCommandSeq;
@@ -138,14 +154,14 @@ class ANTDevicePWR : public ANTDevice {
  public:
     explicit ANTDevicePWR(const ANTDeviceID &id);
     virtual ~ANTDevicePWR(void) {}
-    void parseMessage(ANTMessage *message);
+    void processMessage(ANTMessage *message);
 };
 
 class ANTDeviceHR : public ANTDevice {
  public:
     explicit ANTDeviceHR(const ANTDeviceID &id);
     virtual ~ANTDeviceHR(void) {}
-    void parseMessage(ANTMessage *message);
+    void processMessage(ANTMessage *message);
 
  private:
     uint16_t hbEventTime;

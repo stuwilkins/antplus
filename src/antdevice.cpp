@@ -32,6 +32,7 @@
 #include "debug.h"
 
 ANTDevice::ANTDevice(void) {
+    pthread_mutex_init(&thread_lock, NULL);
 }
 
 ANTDevice::ANTDevice(const ANTDeviceID &id)
@@ -40,6 +41,7 @@ ANTDevice::ANTDevice(const ANTDeviceID &id)
 }
 
 ANTDevice::~ANTDevice(void) {
+    pthread_mutex_destroy(&thread_lock);
 }
 
 void ANTDevice::addMetaDatum(std::string name, float val) {
@@ -80,7 +82,7 @@ void ANTDevice::addDatum(const char *name, ANTDeviceDatum val) {
     addDatum(std::string(name), val);
 }
 
-void ANTDevice::parseMessage(ANTMessage *message) {
+void ANTDevice::processMessage(ANTMessage *message) {
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
 
@@ -131,8 +133,8 @@ ANTDeviceFEC::ANTDeviceFEC(const ANTDeviceID &id)
 }
 
 
-void ANTDeviceFEC::parseMessage(ANTMessage *message) {
-    ANTDevice::parseMessage(message);
+void ANTDeviceFEC::processMessage(ANTMessage *message) {
+    ANTDevice::processMessage(message);
 
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
@@ -234,8 +236,8 @@ ANTDevicePWR::ANTDevicePWR(const ANTDeviceID &id)
     deviceName = std::string("POWER");
 }
 
-void ANTDevicePWR::parseMessage(ANTMessage *message) {
-    ANTDevice::parseMessage(message);
+void ANTDevicePWR::processMessage(ANTMessage *message) {
+    ANTDevice::processMessage(message);
 
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
@@ -328,8 +330,8 @@ ANTDeviceHR::ANTDeviceHR(const ANTDeviceID &id)
     deviceName = std::string("HEARTRATE");
 }
 
-void ANTDeviceHR::parseMessage(ANTMessage *message) {
-    ANTDevice::parseMessage(message);
+void ANTDeviceHR::processMessage(ANTMessage *message) {
+    ANTDevice::processMessage(message);
 
     uint8_t *data = message->getData();
     int dataLen = message->getDataLen();
