@@ -34,6 +34,7 @@
 
 #include <chrono>
 #include <vector>
+#include <queue>
 
 #include "antdefs.h"
 #include "antmessage.h"
@@ -101,18 +102,27 @@ class ANT {
     std::vector<ANTChannel> antChannel;
     pthread_t listenerId;
     pthread_t pollerId;
+    pthread_t processorId;
     bool threadRun;
     int pollTime;
     bool extMessages;
     time_point<Clock> startTime;
 
+    std::queue<ANTMessage> messageQueue;
+    pthread_mutex_t message_lock;
+    pthread_cond_t message_cond;
+
     void* listenerThread(void);
     void* pollerThread(void);
+    void* processorThread(void);
     static void* callListenerThread(void *ctx) {
         return ((ANT*)ctx)->listenerThread();
     }
     static void* callPollerThread(void *ctx) {
         return ((ANT*)ctx)->pollerThread();
+    }
+    static void* callProcessorThread(void *ctx) {
+        return ((ANT*)ctx)->processorThread();
     }
 };
 

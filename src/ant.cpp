@@ -47,12 +47,15 @@ ANT::ANT(ANTInterface *interface, int nChannels) {
 
     // Set the start time
     startTime = Clock::now();
+
+    // Setup the mutexes
+    pthread_mutex_init(&message_lock, NULL);
+    pthread_cond_init(&message_cond, NULL);
 }
 
 ANT::~ANT(void) {
-    // if (antChannel != nullptr) {
-    //     delete [] antChannel;
-    // }
+    pthread_mutex_destroy(&message_lock);
+    pthread_cond_destroy(&message_cond);
 }
 
 int ANT::reset(void) {
@@ -167,6 +170,9 @@ int ANT::startThreads(void) {
 
     DEBUG_COMMENT("Starting Poller Thread ...\n");
     pthread_create(&pollerId, NULL, callPollerThread, (void *)this);
+
+    DEBUG_COMMENT("Starting Processor Thread ...\n");
+    pthread_create(&processorId, NULL, callProcessorThread, (void *)this);
     return NOERROR;
 }
 
@@ -174,11 +180,17 @@ int ANT::stopThreads(void) {
     DEBUG_COMMENT("Stopping threads.....\n");
     threadRun = false;
 
+    // Wakeup the processor thread
+    pthread_cond_signal(&message_cond);
+
     pthread_join(listenerId, NULL);
     DEBUG_COMMENT("Listener Thread Joined.\n");
 
     pthread_join(pollerId, NULL);
     DEBUG_COMMENT("Poller Thread Joined.\n");
+
+    pthread_join(processorId, NULL);
+    DEBUG_COMMENT("Processor Thread Joined.\n");
     return NOERROR;
 }
 
@@ -221,26 +233,52 @@ void* ANT::listenerThread(void) {
     while (threadRun) {
         std::vector<ANTMessage> message;
         iface->readMessage(&message);
-        for (auto & m : message) {
-            switch (m.getType()) {
-                case ANT_NOTIF_STARTUP:
-                    DEBUG_COMMENT("RESET OK\n");
-                    break;
-                case ANT_CHANNEL_EVENT:
-                    channelProcessEvent(&m);
-                    break;
-                case ANT_CHANNEL_ID:
-                    channelProcessID(&m);
-                    break;
-                case ANT_BROADCAST_DATA:
-                case ANT_ACK_DATA:
-                    channelProcessBroadcast(&m);
-                    break;
-                default:
-                    DEBUG_PRINT("UNKNOWN TYPE 0x%02X\n",
-                            m.getType());
-                    break;
-            }
+        for (ANTMessage& m : message) {
+            pthread_mutex_lock(&message_lock);
+            messageQueue.push(m);
+            pthread_cond_signal(&message_cond);
+            pthread_mutex_unlock(&message_lock);
+        }
+    }
+
+    return NULL;
+}
+
+void* ANT::processorThread(void) {
+    while (threadRun) {
+        pthread_mutex_lock(&message_lock);
+        pthread_cond_wait(&message_cond, &message_lock);
+
+        // Check if we woke up becuase of queued
+        // messages
+        if (messageQueue.empty()) {
+            pthread_mutex_unlock(&message_lock);
+            continue;
+        }
+
+        ANTMessage m = messageQueue.front();
+        messageQueue.pop();
+
+        pthread_mutex_unlock(&message_lock);
+
+        switch (m.getType()) {
+            case ANT_NOTIF_STARTUP:
+                DEBUG_COMMENT("RESET OK\n");
+                break;
+            case ANT_CHANNEL_EVENT:
+                channelProcessEvent(&m);
+                break;
+            case ANT_CHANNEL_ID:
+                channelProcessID(&m);
+                break;
+            case ANT_BROADCAST_DATA:
+            case ANT_ACK_DATA:
+                channelProcessBroadcast(&m);
+                break;
+            default:
+                DEBUG_PRINT("UNKNOWN TYPE 0x%02X\n",
+                        m.getType());
+                break;
         }
     }
 
