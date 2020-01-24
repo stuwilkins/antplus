@@ -35,6 +35,7 @@ using std::chrono::milliseconds;
 #include <vector>
 #include <chrono>
 #include <string>
+#include <map>
 
 #include "antmessage.h"
 #include "debug.h"
@@ -60,6 +61,10 @@ class ANTDeviceDatum {
     float value;
     time_point<Clock> ts;
 };
+
+typedef std::map<std::string, float> tMetaData;
+typedef std::map<std::string, ANTDeviceDatum> tData;
+typedef std::map<std::string, std::vector<ANTDeviceDatum>> tTsData;
 
 class ANTDevice {
  public:
@@ -92,33 +97,21 @@ class ANTDevice {
     ANTDeviceID  getDeviceID(void)   { return devID; }
     std::string& getDeviceName(void) { return deviceName; }
 
-    std::vector<std::string>&    getValueNames(void) {
-        return valueNames;
-    }
-    std::vector<std::string>&    getMetaNames(void) {
-        return metaNames;
-    }
-    std::vector<ANTDeviceDatum>& getTsData(int i) {
-        return tsData[i];
-    }
-    std::vector<std::vector<ANTDeviceDatum>>& getTsData(void) {
+    tTsData& getTsData(void) {
         return tsData;
     }
-    ANTDeviceDatum getData(int i) {
-        return data[i];
-    }
-    std::vector<ANTDeviceDatum>& getData(void) {
+    tData& getData(void) {
         return data;
     }
-    std::vector<float>& getMetaData(void) {
+    tMetaData& getMetaData(void) {
         return metaData;
     }
 
  private:
-    std::vector<ANTDeviceDatum> data;
-    std::vector<std::vector<ANTDeviceDatum>> tsData;
-    std::vector<float> metaData;
-    ANTDeviceID devID;
+    tData           data;
+    tTsData         tsData;
+    tMetaData       metaData;
+    ANTDeviceID     devID;
     pthread_mutex_t thread_lock;
 
  protected:

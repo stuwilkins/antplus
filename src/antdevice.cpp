@@ -45,16 +45,7 @@ ANTDevice::~ANTDevice(void) {
 }
 
 void ANTDevice::addMetaDatum(std::string name, float val) {
-    auto it = std::find(metaNames.begin(), metaNames.end(), name);
-    if (it != metaNames.end()) {
-        int i = distance(metaNames.begin(), it);
-        DEBUG_PRINT("Storing meta %s (%d)\n", name.c_str(), i);
-        metaData[i] = val;
-    } else {
-        DEBUG_PRINT("Adding meta %s\n", name.c_str());
-        metaNames.push_back(name);
-        metaData.push_back(val);
-    }
+    metaData[name] = val;
 }
 
 void ANTDevice::addMetaDatum(const char* name, float val) {
@@ -62,20 +53,8 @@ void ANTDevice::addMetaDatum(const char* name, float val) {
 }
 
 void ANTDevice::addDatum(std::string name, ANTDeviceDatum val) {
-    auto it = std::find(valueNames.begin(), valueNames.end(), name);
-    if (it != valueNames.end()) {
-        int i = distance(valueNames.begin(), it);
-        DEBUG_PRINT("Storing %s (%d)\n", name.c_str(), i);
-        tsData[i].push_back(val);
-        data[i] = val;
-    } else {
-        DEBUG_PRINT("Adding %s\n", name.c_str());
-        valueNames.push_back(name);
-        std::vector<ANTDeviceDatum> d;
-        d.push_back(val);
-        tsData.push_back(d);
-        data.push_back(val);
-    }
+    tsData[name].push_back(val);
+    data[name] = val;
 }
 
 void ANTDevice::addDatum(const char *name, ANTDeviceDatum val) {
