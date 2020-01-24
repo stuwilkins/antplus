@@ -85,8 +85,6 @@ class ANTDevice {
     std::vector<ANTDeviceDatum>& getTsData(int i);
 
  private:
-    // int nValues;
-    // int nMetaValues;
     std::vector<ANTDeviceDatum> data;
     std::vector<std::vector<ANTDeviceDatum>> tsData;
     std::vector<float> metaData;

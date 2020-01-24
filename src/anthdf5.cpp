@@ -60,7 +60,8 @@ int write_data(ANT *antusb, std::string filename) {
         for (auto dev : chan->getDeviceList()) {
             if (dev != nullptr) {
                 std::string devName = dev->getDeviceName() + '_';
-                devName = devName + std::to_string(chan->getDeviceID());
+                devName = devName + std::to_string(
+                        dev->getDeviceID().getID());
 
                 DEBUG_PRINT("Processing Channel %d "
                         "(numValues = %d, devName = %s)\n",

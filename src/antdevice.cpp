@@ -32,41 +32,14 @@
 #include "debug.h"
 
 ANTDevice::ANTDevice(void) {
-    // nValues     = 0;
-    // tsData      = nullptr;
-    // data        = nullptr;
-    // metaData    = nullptr;
-
-    // nMetaValues = 4;
-
-    // metaNames.push_back("HW_REVISION");
-    // metaNames.push_back("MANUFACTURER_ID");
-    // metaNames.push_back("MODEL_NUMBER");
-    // metaNames.push_back("SERIAL_NUMBER");
 }
 
 ANTDevice::ANTDevice(const ANTDeviceID &id)
     : ANTDevice() {
-    // Create the list of values
-    // nValues += nMeas;
-    // nMetaValues += nMetaMeas;
     devID = id;
-
-    // tsData   = new std::vector<ANTDeviceDatum>[nValues];
-    // data     = new ANTDeviceDatum[nValues];
-    // metaData = new float[nMetaValues];
 }
 
 ANTDevice::~ANTDevice(void) {
-    // if (tsData != nullptr) {
-    //     delete [] tsData;
-    // }
-    // if (data != nullptr) {
-    //     delete [] data;
-    // }
-    // if (metaData != nullptr) {
-    //     delete [] metaData;
-    // }
 }
 
 void ANTDevice::addMetaDatum(std::string name, float val) {
@@ -166,18 +139,6 @@ ANTDeviceNONE::ANTDeviceNONE(const ANTDeviceID &id)
 ANTDeviceFEC::ANTDeviceFEC(const ANTDeviceID &id)
      : ANTDevice(id) {
     deviceName = std::string("FE-C");
-    // valueNames.push_back("GENERAL_INST_SPEED");
-    // valueNames.push_back("SETTINGS_CYCLE_LENGTH");
-    // valueNames.push_back("SETTINGS_RESISTANCE");
-    // valueNames.push_back("SETTINGS_INCLINE");
-    // valueNames.push_back("TRAINER_CADENCE");
-    // valueNames.push_back("TRAINER_ACC_POWER");
-    // valueNames.push_back("TRAINER_INST_POWER");
-    // valueNames.push_back("TRAINER_STATUS");
-    // valueNames.push_back("TRAINER_FLAGS");
-    // valueNames.push_back("TRAINER_TARGET_RESISTANCE");
-    // valueNames.push_back("TRAINER_TARGET_POWER");
-
     lastCommandSeq = 0xFF;
 }
 
@@ -283,21 +244,6 @@ void ANTDeviceFEC::parseMessage(ANTMessage *message) {
 ANTDevicePWR::ANTDevicePWR(const ANTDeviceID &id)
     : ANTDevice(id) {
     deviceName = std::string("POWER");
-    // valueNames.push_back("BALANCE");
-    // valueNames.push_back("CADENCE");
-    // valueNames.push_back("ACC_POWER");
-    // valueNames.push_back("INST_POWER");
-    // valueNames.push_back("LEFT_TE");
-    // valueNames.push_back("RIGHT_TE");
-    // valueNames.push_back("LEFT_PS");
-    // valueNames.push_back("RIGHT_PS");
-    // valueNames.push_back("N_BATTERIES");
-    // valueNames.push_back("OPERATING_TIME");
-    // valueNames.push_back("BATTERY_VOLTAGE");
-    // valueNames.push_back("CRANK_LENGTH");
-    // valueNames.push_back("CRANK_STATUS");
-    // valueNames.push_back("SENSOR_STATUS");
-    // valueNames.push_back("PEAK_TORQUE_THRESHOLD");
 }
 
 void ANTDevicePWR::parseMessage(ANTMessage *message) {
@@ -392,15 +338,6 @@ ANTDeviceHR::ANTDeviceHR(const ANTDeviceID &id)
     lastToggleBit = 0xFF;
 
     deviceName = std::string("HEARTRATE");
-
-    // valueNames.push_back("HEART_RATE");
-    // valueNames.push_back("RR_INTERVAL");
-
-    // metaNames.push_back("HR_HW_VERSION");
-    // metaNames.push_back("HR_SW_VERSION");
-    // metaNames.push_back("HR_MODEL_NUMBER");
-    // metaNames.push_back("HR_MANUFACTURER");
-    // metaNames.push_back("HR_SERIAL_NUMBER");
 }
 
 void ANTDeviceHR::parseMessage(ANTMessage *message) {
@@ -446,6 +383,15 @@ void ANTDeviceHR::parseMessage(ANTMessage *message) {
         DEBUG_PRINT("HR Previous, %d, %d, %f\n", previousHbEventTime,
                 hbEventTime, rrInterval);
     } else if (page == ANT_DEVICE_HR_INFO) {
+        addMetaDatum("HR_HW_VERSION", data[1]);
+        addMetaDatum("HR_SW_VERSION", data[2]);
+        addMetaDatum("HR_MODEL_NUMBER", data[3]);
+    } else if (page == ANT_DEVICE_HR_MF_INFO) {
+        uint16_t serialnum;
+        serialnum  = data[2];
+        serialnum |= (data[3] << 8);
+        addMetaDatum("HR_MANUFACTURER_ID", data[1]);
+        addMetaDatum("HR_SERIAL_NUMBER", serialnum);
     } else if (page != ANT_DEVICE_HR_COMMON) {
         DEBUG_PRINT("Unknown HR Page 0x%02X\n", data[0] & 0x7F);
     }
