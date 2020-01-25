@@ -286,30 +286,27 @@ void* ANT::processorThread(void) {
 }
 
 int ANT::channelChangeStateTo(uint8_t chan, int state) {
-    DEBUG_PRINT("chan = %d, state = %d\n", chan, state);
     ANTChannel& antChannel = getChannel(chan);
+    ANTDeviceParams params = antChannel.getDeviceParams();
+
     switch (state) {
         case ANTChannel::STATE_ASSIGNED:
-            assignChannel(chan,
-                    antChannel.getChannelType(),
+            assignChannel(chan, params.deviceType,
                     antChannel.getNetwork(),
                     antChannel.getExtended());
             break;
         case ANTChannel::STATE_ID_SET:
-            setChannelID(chan, antChannel.getDeviceID(),
-                    antChannel.getDeviceType(), 0);
+            setChannelID(chan, antChannel.getDeviceId(),
+                    params.deviceType, 0);
             break;
         case ANTChannel::STATE_SET_TIMEOUT:
-            setSearchTimeout(chan,
-                    antChannel.getSearchTimeout());
+            setSearchTimeout(chan, antChannel.getSearchTimeout());
             break;
         case ANTChannel::STATE_SET_PERIOD:
-            setChannelPeriod(chan,
-                    antChannel.getDevicePeriod());
+            setChannelPeriod(chan, params.devicePeriod);
             break;
         case ANTChannel::STATE_SET_FREQ:
-            setChannelFreq(chan,
-                    antChannel.getDeviceFrequency());
+            setChannelFreq(chan, params.deviceFrequency);
             break;
         case ANTChannel::STATE_OPEN_UNPAIRED:
             openChannel(chan);
@@ -326,7 +323,7 @@ int ANT::channelStart(uint8_t chan, int type,
     // Start a channel config
 
     ANTChannel& antChannel = getChannel(chan);
-    antChannel.setDeviceID(id);
+    antChannel.setDeviceId(id);
     antChannel.setType(type);
     antChannel.setChannelType(CHANNEL_TYPE_RX);
 

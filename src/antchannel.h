@@ -31,12 +31,11 @@
 #include <vector>
 #include "antdevice.h"
 
-class ANTChannelParams {
- public:
-    int type;
-    uint8_t deviceType;
+struct ANTDeviceParams {
+    int      type;
+    uint8_t  deviceType;
     uint16_t devicePeriod;
-    uint8_t deviceFrequency;
+    uint8_t  deviceFrequency;
 };
 
 class ANTChannel {
@@ -84,11 +83,14 @@ class ANTChannel {
     uint16_t   getSearchTimeout(void)       { return searchTimeout; }
     int        getType(void)                { return type; }
     int        getState(void)               { return currentState; }
-    uint16_t   getDeviceID(void)            { return deviceId; }
-    void       setDeviceID(uint16_t id)     { deviceId = id; }
-    uint8_t    getDeviceType(void)          { return deviceType; }
-    uint16_t   getDevicePeriod(void)        { return devicePeriod; }
-    uint16_t   getDeviceFrequency(void)     { return deviceFrequency; }
+    void       setDeviceId(uint16_t id)     { deviceId = id; }
+    uint16_t   getDeviceId(void)            { return deviceId; }
+
+    ANTDeviceParams getDeviceParams(void)   { return deviceParams; }
+    // uint16_t   getDeviceID(void)            { return deviceId; }
+    // uint8_t    getDeviceType(void)          { return deviceType; }
+    // uint16_t   getDevicePeriod(void)        { return devicePeriod; }
+    // uint16_t   getDeviceFrequency(void)     { return deviceFrequency; }
 
     void       setState(int state);
 
@@ -104,17 +106,12 @@ class ANTChannel {
     int      currentState;
     uint8_t  channelType;
     int      channelNum;
-    uint16_t deviceId;
-    uint8_t  deviceType;
-    uint16_t devicePeriod;
-    uint8_t  deviceFrequency;
     uint8_t  searchTimeout;
     uint8_t  extended;
     int      type;
-
+    uint16_t deviceId;
+    ANTDeviceParams deviceParams;
     std::vector<ANTDevice*> deviceList;
-
-    static ANTChannelParams params[5];
 };
 
 #endif  // SRC_ANTCHANNEL_H_

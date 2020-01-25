@@ -31,17 +31,25 @@
 #include "antchannel.h"
 #include "debug.h"
 
+ANTDeviceParams antDeviceParams[] = {
+    {  ANTChannel::TYPE_HR,   0x78, 0x1F86, 0x39 },
+    {  ANTChannel::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
+    {  ANTChannel::TYPE_FEC,  0x11, 0x2000, 0x39 },
+    {  ANTChannel::TYPE_PAIR, 0x00, 0x0000, 0x39 },
+    {  ANTChannel::TYPE_NONE, 0x00, 0x0000, 0x00 },
+};
+
 ANTChannel::ANTChannel(void) {
     network = 0x00;
-    deviceId = 0x00;
     searchTimeout = 0xFF;
     channelType = CHANNEL_TYPE_RX;
     extended = 0x00;
     channelNum = 0;
 
-    // The state of this channel
-    currentState = STATE_IDLE;
+    deviceId = 0x0000;
+    setType(TYPE_NONE);
 
+    currentState = STATE_IDLE;
     type = TYPE_NONE;
 }
 
@@ -76,30 +84,18 @@ void ANTChannel::setType(int t) {
     DEBUG_PRINT("Setting type to %d\n", channelType);
 
     int i = 0;
-    while (params[i].type != TYPE_NONE) {
-        if (params[i].type == channelType) {
-            deviceType = params[i].deviceType;
-            devicePeriod = params[i].devicePeriod;
-            deviceFrequency = params[i].deviceFrequency;
+    while (antDeviceParams[i].type != TYPE_NONE) {
+        if (antDeviceParams[i].type == channelType) {
+            deviceParams = antDeviceParams[i];
             DEBUG_PRINT("type = 0x%02X period = 0x%04X freq = 0x%02X\n",
-                    deviceType, devicePeriod, deviceFrequency);
+                    deviceParams.deviceType,
+                    deviceParams.devicePeriod,
+                    deviceParams.deviceFrequency);
             break;
         }
         i++;
     }
-
-    if (params[i].type == TYPE_NONE) {
-        DEBUG_COMMENT("Failed to set channel type\n");
-    }
 }
-
-ANTChannelParams ANTChannel::params[] = {
-    {  ANTChannel::TYPE_HR,   0x78, 0x1F86, 0x39 },
-    {  ANTChannel::TYPE_PWR,  0x0B, 0x1FF6, 0x39 },
-    {  ANTChannel::TYPE_FEC,  0x11, 0x2000, 0x39 },
-    {  ANTChannel::TYPE_PAIR, 0x00, 0x0000, 0x39 },
-    {  ANTChannel::TYPE_NONE, 0x00, 0x0000, 0x00 },
-};
 
 void ANTChannel::setState(int state) {
     currentState = state;
