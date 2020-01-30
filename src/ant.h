@@ -42,19 +42,10 @@
 #include "ant_network_key.h"
 
 #define SLEEP_DURATION       50000L
-#define RESET_DURATION      500000L
 
 extern const char* ANT_GIT_REV;
 extern const char* ANT_GIT_BRANCH;
 extern const char* ANT_GIT_VERSION;
-
-class ANTInterface {
- public:
-    virtual int open(void) = 0;
-    virtual int close(void) = 0;
-    virtual int sendMessage(ANTMessage *message) = 0;
-    virtual int readMessage(std::vector<ANTMessage> *message) = 0;
-};
 
 class ANT {
  public:
@@ -64,35 +55,17 @@ class ANT {
     };
     explicit ANT(ANTInterface *iface, int nChannels = 8);
     ~ANT(void);
-    int reset(void);
-    int setNetworkKey(uint8_t net);
-    int assignChannel(uint8_t chanNum, uint8_t chanType,
-            uint8_t net, uint8_t ext = 0x00);
-    int setChannelID(uint8_t chan, uint16_t device,
-            uint8_t type, bool master);
-    int setSearchTimeout(uint8_t chan, uint8_t timeout);
-    int setChannelPeriod(uint8_t chan, uint16_t period);
-    int setChannelFreq(uint8_t chan, uint8_t frequency);
-    int openChannel(uint8_t chan);
-    int requestMessage(uint8_t chan, uint8_t message);
-    int requestDataPage(uint8_t chan, uint8_t page);
-    int setLibConfig(uint8_t chan, uint8_t config);
+    int init(void);
     int startThreads(void);
     int stopThreads(void);
-    int changeStateTo(int state);
-    int channelProcessID(ANTMessage *m);
-    int channelProcessEvent(ANTMessage *m);
-    int channelProcessBroadcast(ANTMessage *m);
-    int channelChangeStateTo(uint8_t chan, int state);
-    int channelStart(uint8_t chan, int type,
-            uint16_t id = 0x0000, bool scanning = false,
-            bool wait = true);
+
     ANTChannel& getChannel(uint8_t chan) {
         return (antChannel[chan]);
     }
     std::vector<ANTChannel>& getChannels(void) {
         return antChannel;
     }
+
     int  getPollTime(void)    { return pollTime; }
     void setPollTime(int t)   { pollTime = t; }
     time_point<Clock> getStartTime(void) { return startTime; }

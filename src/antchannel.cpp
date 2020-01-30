@@ -39,24 +39,23 @@ ANTDeviceParams antDeviceParams[] = {
     {  ANTChannel::TYPE_NONE, 0x00, 0x0000, 0x00 },
 };
 
-ANTChannel::ANTChannel(void) {
-    network = 0x00;
-    searchTimeout = 0xFF;
-    channelType = CHANNEL_TYPE_RX;
-    extended = 0x00;
-    channelNum = 0;
+ANTChannel::ANTChannel(int type, int num, ANTInterface* interface) {
+    network             = 0x00;
+    searchTimeout       = 0xFF;
+    channelNum          = num;
+    channelType         = CHANNEL_TYPE_RX;
+    channelTypeExtended = 0x00;
+    currentState        = STATE_IDLE;
+    deviceId            = 0x0000;
+    extended            = 0x00;
+    iface               = interface;
+    threadRun           = true;
 
-    deviceId = 0x0000;
-    setType(TYPE_NONE);
-
-    currentState = STATE_IDLE;
-    type = TYPE_NONE;
-}
-
-ANTChannel::ANTChannel(int type, int num)
-    : ANTChannel() {
-    channelNum = num;
     setType(type);
+
+    // Setup the mutexes
+    pthread_mutex_init(&message_lock, NULL);
+    pthread_cond_init(&message_cond, NULL);
 }
 
 ANTChannel::~ANTChannel(void) {
@@ -76,16 +75,83 @@ ANTChannel::~ANTChannel(void) {
                 break;
         }
     }
+
+    pthread_mutex_destroy(&message_lock);
+    pthread_cond_destroy(&message_cond);
+}
+
+int ANTChannel::startThread(void) {
+    threadRun = true;
+
+    DEBUG_COMMENT("Starting channel thread ...\n");
+    pthread_create(&threadId, NULL, callThread, (void *)this);
+
+    return NOERROR;
+}
+
+int ANTChannel::stopThread(void) {
+    DEBUG_COMMENT("Stopping threads.....\n");
+    threadRun = false;
+
+    // Wakeup the processor thread
+    pthread_cond_signal(&message_cond);
+
+    pthread_join(threadId, NULL);
+    DEBUG_COMMENT("Channel Thread Joined.\n");
+
+    return NOERROR;
+}
+
+void* ANTChannel::thread(void) {
+    DEBUG_COMMENT("Thread started.....\n");
+    while (threadRun) {
+        pthread_mutex_lock(&message_lock);
+        pthread_cond_wait(&message_cond, &message_lock);
+
+        // Check if we woke up becuase of queued
+        // messages
+
+        if (messageQueue.empty()) {
+            pthread_mutex_unlock(&message_lock);
+            continue;
+        }
+
+        ANTMessage m = messageQueue.front();
+        messageQueue.pop();
+
+        pthread_mutex_unlock(&message_lock);
+
+        ANTDeviceID devID = m.getDeviceID();
+
+        if (!devID.isValid()) {
+            DEBUG_COMMENT("Processing with no device id info\n");
+            continue;
+        }
+
+        ANTDevice *device = nullptr;
+        for (ANTDevice *dev : deviceList) {
+            if (*dev == devID) {
+                device = dev;
+                break;
+            }
+        }
+
+        if (device == nullptr) {
+            device = addDevice(&devID);
+        }
+
+        device->parseMessage(&m);
+    }
+
+    return NULL;
 }
 
 void ANTChannel::setType(int t) {
-    channelType = t;
-
-    DEBUG_PRINT("Setting type to %d\n", channelType);
+    DEBUG_PRINT("Setting type to %d\n", t);
 
     int i = 0;
     while (antDeviceParams[i].type != TYPE_NONE) {
-        if (antDeviceParams[i].type == channelType) {
+        if (antDeviceParams[i].type == t) {
             deviceParams = antDeviceParams[i];
             DEBUG_PRINT("type = 0x%02X period = 0x%04X freq = 0x%02X\n",
                     deviceParams.deviceType,
@@ -95,10 +161,6 @@ void ANTChannel::setType(int t) {
         }
         i++;
     }
-}
-
-void ANTChannel::setState(int state) {
-    currentState = state;
 }
 
 ANTDevice* ANTChannel::addDevice(ANTDeviceID *id) {
@@ -129,24 +191,181 @@ ANTDevice* ANTChannel::addDevice(ANTDeviceID *id) {
 }
 
 void ANTChannel::parseMessage(ANTMessage *message) {
-    ANTDeviceID devID = message->getDeviceID();
+    ANTMessage m = *message;
 
-    if (!devID.isValid()) {
-        DEBUG_COMMENT("Processing with no device id info\n");
-        return;
+    pthread_mutex_lock(&message_lock);
+    messageQueue.push(m);
+    pthread_cond_signal(&message_cond);
+    pthread_mutex_unlock(&message_lock);
+}
+
+int ANTChannel::processEvent(ANTMessage *m) {
+    if (m->getChannel() != channelNum) {
+        DEBUG_PRINT("Message is for channel %d but channelNum = %d\n",
+                m->getChannel(), channelNum);
+        return ERROR;
     }
 
-    ANTDevice *device = nullptr;
-    for (ANTDevice *dev : deviceList) {
-        if (*dev == devID) {
-            device = dev;
-            break;
+    uint8_t commandCode = m->getData(0);
+    if (commandCode != 0x01) {
+        switch (commandCode) {
+            case ANT_SET_NETWORK:
+                DEBUG_COMMENT("ANT_SET_NETWORK Receieved\n");
+                break;
+            case ANT_UNASSIGN_CHANNEL:
+                DEBUG_COMMENT("ANT_UNASSIGN_CHANNEL Recieved\n");
+                break;
+            case ANT_ASSIGN_CHANNEL:
+                DEBUG_COMMENT("ANT_ASSIGN_CHANNEL Recieved\n");
+                currentState = STATE_ASSIGNED;
+                changeStateTo(STATE_ID_SET);
+                break;
+            case ANT_CHANNEL_ID:
+                DEBUG_COMMENT("ANT_CHANNEL_ID Recieved\n");
+                currentState = STATE_ID_SET;
+                changeStateTo(STATE_SET_TIMEOUT);
+                break;
+            case ANT_SEARCH_TIMEOUT:
+                // Do nothing
+                DEBUG_COMMENT("ANT_SEARCH_TIMEOUT Recieved\n");
+                break;
+            case ANT_LP_SEARCH_TIMEOUT:
+                DEBUG_COMMENT("ANT_LP_SEARCH_TIMEOUT Recieved\n");
+                currentState = STATE_SET_TIMEOUT;
+                changeStateTo(STATE_SET_PERIOD);
+                break;
+            case ANT_CHANNEL_PERIOD:
+                DEBUG_COMMENT("ANT_CHANNEL_PERIOD Recieved\n");
+                currentState = STATE_SET_PERIOD;
+                changeStateTo(STATE_SET_FREQ);
+                break;
+            case ANT_CHANNEL_FREQUENCY:
+                DEBUG_COMMENT("ANT_CHANNEL_FREQUENCY Recieved\n");
+                currentState = STATE_SET_FREQ;
+                changeStateTo(STATE_OPEN_UNPAIRED);
+                break;
+            case ANT_LIB_CONFIG:
+                DEBUG_COMMENT("ANT_LIB_CONFIG Recieved\n");
+                break;
+            case ANT_OPEN_CHANNEL:
+                DEBUG_COMMENT("ANT_OPEN_CHANNEL Recieved\n");
+                // Do nothing, but set state
+                currentState = STATE_OPEN_UNPAIRED;
+                break;
+            default:
+                DEBUG_PRINT("Unknown command 0x%02X\n", commandCode);
+                break;
+        }
+    } else {
+        uint8_t eventCode = m->getData(1);
+        switch (eventCode) {
+            case EVENT_RX_SEARCH_TIMEOUT:
+                DEBUG_PRINT("Search timeout on channel %d\n", channelNum);
+                currentState = STATE_OPEN_UNPAIRED;
+                break;
+            case EVENT_RX_FAIL:
+                DEBUG_PRINT("RX Failed on channel %d\n", channelNum);
+                break;
+            case EVENT_TX:
+                DEBUG_PRINT("TX on channel %d\n", channelNum);
+                break;
+            case EVENT_TRANSFER_RX_FAILED:
+                DEBUG_PRINT("RX Transfer Completed on channel %d\n",
+                        channelNum);
+                break;
+            case EVENT_TRANSFER_TX_COMPLETED:
+                DEBUG_PRINT("TX Transfer Completed on channel %d\n",
+                        channelNum);
+                break;
+            default:
+                DEBUG_PRINT("Unknown response 0x%02X\n", eventCode);
+                break;
         }
     }
 
-    if (device == nullptr) {
-        device = addDevice(&devID);
+    return NOERROR;
+}
+
+int ANTChannel::changeStateTo(int state) {
+    switch (state) {
+        case STATE_ASSIGNED:
+            iface->assignChannel(channelNum, channelType,
+                    network, channelTypeExtended);
+            break;
+        case STATE_ID_SET:
+            iface->setChannelID(channelNum, deviceId,
+                    deviceParams.deviceType, 0);
+            break;
+        case STATE_SET_TIMEOUT:
+            iface->setSearchTimeout(channelNum, searchTimeout);
+            break;
+        case STATE_SET_PERIOD:
+            iface->setChannelPeriod(channelNum,
+                    deviceParams.devicePeriod);
+            break;
+        case STATE_SET_FREQ:
+            iface->setChannelFreq(channelNum,
+                    deviceParams.deviceFrequency);
+            break;
+        case STATE_OPEN_UNPAIRED:
+            iface->openChannel(channelNum, true);
+            break;
+        default:
+            DEBUG_PRINT("Unknown State %d\n", state);
+            break;
+    }
+    return NOERROR;
+}
+
+int ANTChannel::processId(ANTMessage *m) {
+    // Parse the ID
+    uint16_t id;
+    uint8_t type;
+    uint8_t chan = m->getChannel();
+    id  = (m->getData(1) << 8);
+    id |= m->getData(0);
+    type = m->getData(2);
+
+    DEBUG_PRINT("Processed Device ID 0x%04X type 0x%02X on channel %d\n",
+            id, type, chan);
+
+    return NOERROR;
+}
+
+int ANTChannel::start(int type, uint16_t id,
+        bool scanning, bool wait) {
+    // Start a channel config
+
+    deviceId = id;
+    channelType = CHANNEL_TYPE_RX;
+    setType(type);
+
+    if (scanning) {
+        channelTypeExtended = CHANNEL_TYPE_EXT_BACKGROUND_SCAN;
     }
 
-    device->parseMessage(message);
+    // Claim the channel.
+
+    if (currentState != STATE_IDLE) {
+        DEBUG_PRINT("Cannot start channel when not IDLE"
+        "(current state = %d)\n", currentState);
+        return ERROR;
+    }
+
+    // Ok the next level is ASSIGNED
+
+    changeStateTo(ANTChannel::STATE_ASSIGNED);
+
+    // If we wait .. spinlock until the channel is open
+    // TODO(swilkins) : We should add a timeout
+
+    if (wait) {
+        while ((currentState != STATE_OPEN_UNPAIRED)
+                && (currentState != STATE_OPEN_PAIRED)) {
+            usleep(SLEEP_DURATION);
+        }
+    }
+
+    return NOERROR;
 }
+

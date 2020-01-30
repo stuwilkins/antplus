@@ -27,8 +27,11 @@
 #ifndef SRC_ANTCHANNEL_H_
 #define SRC_ANTCHANNEL_H_
 
+#include <pthread.h>
 #include <set>
 #include <vector>
+#include <queue>
+#include "antinterface.h"
 #include "antdevice.h"
 
 struct ANTDeviceParams {
@@ -69,8 +72,7 @@ class ANTChannel {
         STATE_CLOSED         = 9
     };
 
-    ANTChannel(void);
-    ANTChannel(int type, int num);
+    ANTChannel(int type, int num, ANTInterface* interface);
     ~ANTChannel(void);
 
     int        getChannelNum(void)          { return channelNum; }
@@ -83,35 +85,50 @@ class ANTChannel {
     uint16_t   getSearchTimeout(void)       { return searchTimeout; }
     int        getType(void)                { return type; }
     int        getState(void)               { return currentState; }
-    void       setDeviceId(uint16_t id)     { deviceId = id; }
-    uint16_t   getDeviceId(void)            { return deviceId; }
+    // void       setDeviceId(uint16_t id)     { deviceId = id; }
+    // uint16_t   getDeviceId(void)            { return deviceId; }
 
+    int start(int type, uint16_t id, bool scanning, bool wait);
     ANTDeviceParams getDeviceParams(void)   { return deviceParams; }
-    // uint16_t   getDeviceID(void)            { return deviceId; }
-    // uint8_t    getDeviceType(void)          { return deviceType; }
-    // uint16_t   getDevicePeriod(void)        { return devicePeriod; }
-    // uint16_t   getDeviceFrequency(void)     { return deviceFrequency; }
 
-    void       setState(int state);
-
-    void       parseMessage(ANTMessage *message);
+    int  processEvent(ANTMessage *m);
+    void parseMessage(ANTMessage *message);
+    int  processId(ANTMessage *m);
 
     ANTDevice* addDevice(ANTDeviceID *id);
     std::vector<ANTDevice*> getDeviceList(void) {
         return deviceList;
     }
 
+    int startThread(void);
+    int stopThread(void);
+
  private:
+    int  changeStateTo(int state);
+
     uint8_t  network;
     int      currentState;
     uint8_t  channelType;
+    uint8_t  channelTypeExtended;
     int      channelNum;
     uint8_t  searchTimeout;
     uint8_t  extended;
     int      type;
     uint16_t deviceId;
+    ANTInterface* iface;
     ANTDeviceParams deviceParams;
     std::vector<ANTDevice*> deviceList;
+
+    bool     threadRun;
+    pthread_t       threadId;
+    pthread_mutex_t message_lock;
+    pthread_cond_t  message_cond;
+    static void* callThread(void *ctx) {
+        return ((ANTChannel*)ctx)->thread();
+    }
+    void *thread(void);
+
+    std::queue<ANTMessage> messageQueue;
 };
 
 #endif  // SRC_ANTCHANNEL_H_

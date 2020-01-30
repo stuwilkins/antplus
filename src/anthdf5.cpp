@@ -60,8 +60,7 @@ int write_data(ANT *antusb, std::string filename) {
         // And cycle through each device
         for (auto dev : chan.getDeviceList()) {
             std::string devName = dev->getDeviceName();
-            devName = '_' + devName + std::to_string(
-                    dev->getDeviceID().getID());
+            devName += '_' + std::to_string(dev->getDeviceID().getID());
 
             DEBUG_PRINT("Processing Channel %d "
                     "(devName = %s)\n",
@@ -211,21 +210,21 @@ int main(int argc, char *argv[]) {
         return -127;
     }
 
-    ANT antusb(&iface);
-
-    if (antusb.reset()) {
+    if (iface.reset()) {
         return -127;
     }
 
+    ANT antusb(&iface);
+
+    antusb.init();
     antusb.startThreads();
 
-    antusb.setNetworkKey(0);
-
-    antusb.channelStart(0, ANTChannel::TYPE_PAIR, 0x0000, true);
-    // antusb.channelStart(0, ANTDevice::TYPE_HR, 0x01E5);
-    // antusb.channelStart(1, ANTDevice::TYPE_PWR, 0xD42D);
-    // antusb.channelStart(2, ANTDevice::TYPE_PWR, 0x635E);
-    // antusb.channelStart(3, ANTDevice::TYPE_FEC, 0x635E);
+    // antusb.getChannel(0).start(ANTChannel::TYPE_PAIR, 0x0000, true, true);
+    antusb.getChannel(0).start(ANTChannel::TYPE_HR, 0x6097, false, true);
+    // antusb.getChannel(0).start(ANTChannel::TYPE_HR,  0x01E5, false, true);
+    // antusb.getChannel(0).start(ANTChannel::TYPE_PWR, 0xD42D, false, true);
+    // antusb.getChannel(0).start(ANTChannel::TYPE_PWR, 0x635E, false, true);
+    // antusb.getChannel(0).start(ANTChannel::TYPE_FEC, 0x635E, false, true);
 
     signal(SIGINT, signalHandler);
     while (!stop) {
