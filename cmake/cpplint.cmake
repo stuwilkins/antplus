@@ -145,6 +145,7 @@ function(cpplint_add_subdirectory DIR)
     # find all source files inside project
     file(GLOB_RECURSE LIST_OF_FILES ${FILES_TO_CHECK})
 	filter_regex(EXCLUDE "version\\.h" LIST_OF_FILES ${LIST_OF_FILES})
+	filter_regex(EXCLUDE "CMakeFiles" LIST_OF_FILES ${LIST_OF_FILES})
 
     # create valid target name for this check
     string(REGEX REPLACE "/" "." TEST_NAME ${DIR})
