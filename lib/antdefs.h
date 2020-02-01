@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef SRC_ANTDEFS_H_
-#define SRC_ANTDEFS_H_
+#ifndef ANT_RECORDER_LIB_ANTDEFS_H_
+#define ANT_RECORDER_LIB_ANTDEFS_H_
 
 #define MAX_MESSAGE_SIZE                    128
 
@@ -151,4 +151,4 @@
 
 #define ANT_DEVICE_HR_PREVIOUS              0x04
 
-#endif  // SRC_ANTDEFS_H_
+#endif  // ANT_RECORDER_LIB_ANTDEFS_H_

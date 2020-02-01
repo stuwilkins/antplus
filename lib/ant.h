@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef SRC_ANT_H_
-#define SRC_ANT_H_
+#ifndef ANT_RECORDER_LIB_ANT_H_
+#define ANT_RECORDER_LIB_ANT_H_
 
 #include <unistd.h>
 #include <stdint.h>
@@ -99,4 +99,4 @@ class ANT {
     }
 };
 
-#endif  // SRC_ANT_H_
+#endif  // ANT_RECORDER_LIB_ANT_H_

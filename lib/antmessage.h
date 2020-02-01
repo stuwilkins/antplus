@@ -25,8 +25,8 @@
 //
 //
 
-#ifndef SRC_ANTMESSAGE_H_
-#define SRC_ANTMESSAGE_H_
+#ifndef ANT_RECORDER_LIB_ANTMESSAGE_H_
+#define ANT_RECORDER_LIB_ANTMESSAGE_H_
 
 #include <stdint.h>
 #include <chrono>
@@ -139,4 +139,4 @@ class ANTMessage {
     time_point<Clock> ts;
 };
 
-#endif  // SRC_ANTMESSAGE_H_
+#endif  // ANT_RECORDER_LIB_ANTMESSAGE_H_

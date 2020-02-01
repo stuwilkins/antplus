@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef SRC_DEBUG_H_
-#define SRC_DEBUG_H_
+#ifndef ANT_RECORDER_LIB_DEBUG_H_
+#define ANT_RECORDER_LIB_DEBUG_H_
 
 #include <stdint.h>
 #include <cstdio>
@@ -53,4 +53,4 @@ void bytestream_to_string(char *out, size_t n_out,
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
-#endif  // SRC_DEBUG_H_
+#endif  // ANT_RECORDER_LIB_DEBUG_H_

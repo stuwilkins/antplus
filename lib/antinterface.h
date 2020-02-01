@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef SRC_ANTINTERFACE_H_
-#define SRC_ANTINTERFACE_H_
+#ifndef ANT_RECORDER_LIB_ANTINTERFACE_H_
+#define ANT_RECORDER_LIB_ANTINTERFACE_H_
 
 #include <stdint.h>
 #include <vector>
@@ -54,4 +54,4 @@ class ANTInterface {
     virtual int readMessage(std::vector<ANTMessage> *message) = 0;
 };
 
-#endif  // SRC_ANTINTERFACE_H_
+#endif  // ANT_RECORDER_LIB_ANTINTERFACE_H_
