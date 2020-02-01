@@ -11,6 +11,7 @@ include(PreventInSourceBuilds)
 
 include(cpplint)
 cpplint_add_subdirectory(lib)
+cpplint_add_subdirectory(python)
 
 FIND_PACKAGE(Threads REQUIRED)
 FIND_PACKAGE(HDF5 1.10 COMPONENTS CXX REQUIRED)
@@ -32,4 +33,5 @@ add_custom_command(
 add_custom_target(version_info DEPENDS ${CMAKE_BINARY_DIR}/version.cpp)
 
 add_subdirectory(lib)
+add_subdirectory(python)
 # add_subdirectory(docs/doxygen)
