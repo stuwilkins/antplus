@@ -33,6 +33,8 @@
 
 ANTDevice::ANTDevice(void) {
     pthread_mutex_init(&thread_lock, NULL);
+
+    storeTsData = true;
 }
 
 ANTDevice::ANTDevice(const ANTDeviceID &id)
@@ -53,7 +55,9 @@ void ANTDevice::addMetaDatum(const char* name, float val) {
 }
 
 void ANTDevice::addDatum(std::string name, ANTDeviceDatum val) {
-    tsData[name].push_back(val);
+    if (storeTsData) {
+        tsData[name].push_back(val);
+    }
     data[name] = val;
 }
 

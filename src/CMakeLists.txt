@@ -1,12 +1,11 @@
 include(GNUInstallDirs)
 
-set(SOURCE_FILES ${CMAKE_BINARY_DIR}/version.cpp
+set(LIB_SOURCE_FILES ${CMAKE_BINARY_DIR}/version.cpp
 	ant.cpp    
 	antchannel.cpp
 	antdevice.cpp
 	debug.cpp
 	antmessage.cpp
-	anthdf5.cpp
 	antinterface.cpp
 	antusbinterface.cpp
 	)

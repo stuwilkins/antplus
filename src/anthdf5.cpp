@@ -220,11 +220,12 @@ int main(int argc, char *argv[]) {
     antusb.startThreads();
 
     // antusb.getChannel(0).start(ANTChannel::TYPE_PAIR, 0x0000, true, true);
-    antusb.getChannel(0).start(ANTChannel::TYPE_HR, 0x6097, false, true);
-    // antusb.getChannel(0).start(ANTChannel::TYPE_HR,  0x01E5, false, true);
-    // antusb.getChannel(0).start(ANTChannel::TYPE_PWR, 0xD42D, false, true);
-    // antusb.getChannel(0).start(ANTChannel::TYPE_PWR, 0x635E, false, true);
-    // antusb.getChannel(0).start(ANTChannel::TYPE_FEC, 0x635E, false, true);
+    antusb.getChannel(0).start(ANTChannel::TYPE_HR,  0x6097, false, true);
+    antusb.getChannel(1).start(ANTChannel::TYPE_HR,  0x01E5, false, true);
+    // antusb.getChannel(2).start(ANTChannel::TYPE_HR,  0x01E5, false, true);
+    antusb.getChannel(3).start(ANTChannel::TYPE_PWR, 0xD42D, false, true);
+    antusb.getChannel(4).start(ANTChannel::TYPE_PWR, 0x635E, false, true);
+    antusb.getChannel(5).start(ANTChannel::TYPE_FEC, 0x635E, false, true);
 
     signal(SIGINT, signalHandler);
     while (!stop) {

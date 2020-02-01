@@ -43,6 +43,10 @@ using std::chrono::milliseconds;
 using Clock = std::chrono::steady_clock;
 using std::chrono::time_point;
 
+/**
+ * @brief 
+ * 
+ */
 class ANTDeviceDatum {
  public:
     ANTDeviceDatum(void) {
@@ -110,6 +114,7 @@ class ANTDevice {
  private:
     tData           data;
     tTsData         tsData;
+    bool            storeTsData;
     tMetaData       metaData;
     ANTDeviceID     devID;
     pthread_mutex_t thread_lock;

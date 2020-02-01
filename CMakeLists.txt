@@ -46,3 +46,4 @@ add_custom_target(version_info DEPENDS ${CMAKE_BINARY_DIR}/version.cpp)
 add_compile_options(-DDEBUG_OUTPUT)
 
 add_subdirectory(src)
+add_subdirectory(docs/doxygen)

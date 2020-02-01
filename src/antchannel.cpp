@@ -153,6 +153,7 @@ void ANTChannel::setType(int t) {
     while (antDeviceParams[i].type != TYPE_NONE) {
         if (antDeviceParams[i].type == t) {
             deviceParams = antDeviceParams[i];
+            type = t;
             DEBUG_PRINT("type = 0x%02X period = 0x%04X freq = 0x%02X\n",
                     deviceParams.deviceType,
                     deviceParams.devicePeriod,
