@@ -12,6 +12,9 @@ ant_network_key.h
 
 build
 
+# For VSCode
+.vscode
+
 # Prerequisites
 *.d
 
