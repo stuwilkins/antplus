@@ -1,0 +1,5 @@
+@PACKAGE_INIT@
+
+if(NOT TARGET centroids::centroids)
+    include(${CMAKE_CURRENT_LIST_DIR}/centroids-targets.cmake)
+endif()
