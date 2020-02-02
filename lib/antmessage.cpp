@@ -32,16 +32,14 @@ ANTMessage::ANTMessage(void) {
     antChannel = 0x00;
     antDataLen = 0;
 
-    antData = new uint8_t[MAX_MESSAGE_SIZE];
+    antData = std::make_unique<uint8_t[]> (MAX_MESSAGE_SIZE);
     for (int i=0; i < MAX_MESSAGE_SIZE; i++) {
         antData[i] = 0x00;
     }
 }
 
 ANTMessage::~ANTMessage(void) {
-    delete [] antData;
 }
-
 
 ANTMessage::ANTMessage(uint8_t *data, int data_len)
     : ANTMessage() {

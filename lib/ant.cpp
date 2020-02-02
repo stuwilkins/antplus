@@ -42,9 +42,8 @@ ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
 
     DEBUG_PRINT("Creating %d channels.\n", nChannels);
     for (int i=0; i < nChannels; i++) {
-        // ANTChannel* c = new ANTChannel(ANTChannel::TYPE_NONE, i, iface);
         antChannel.push_back(std::shared_ptr<ANTChannel>
-        (new ANTChannel(ANTChannel::TYPE_NONE, i, iface)));
+            (new ANTChannel(ANTChannel::TYPE_NONE, i, iface)));
     }
 
     // Set the start time

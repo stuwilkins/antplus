@@ -34,6 +34,10 @@
 ANTDevice::ANTDevice(void) {
     pthread_mutex_init(&thread_lock, NULL);
 
+    data = std::make_shared<tData>();
+    tsData = std::make_shared<tTsData>();
+    metaData = std::make_shared<tMetaData>();
+
     storeTsData = true;
 }
 
@@ -47,7 +51,7 @@ ANTDevice::~ANTDevice(void) {
 }
 
 void ANTDevice::addMetaDatum(std::string name, float val) {
-    metaData[name] = val;
+    (*metaData)[name] = val;
 }
 
 void ANTDevice::addMetaDatum(const char* name, float val) {
@@ -56,9 +60,15 @@ void ANTDevice::addMetaDatum(const char* name, float val) {
 
 void ANTDevice::addDatum(std::string name, ANTDeviceDatum val) {
     if (storeTsData) {
-        tsData[name].push_back(val);
+        if (tsData->count(name)) {
+            (*tsData)[name]->push_back(val);
+        } else {
+            // Create the vector
+            (*tsData)[name] = std::make_shared<std::vector<ANTDeviceDatum>>();
+            (*tsData)[name]->push_back(val);
+        }
     }
-    data[name] = val;
+    (*data)[name] = val;
 }
 
 void ANTDevice::addDatum(const char *name, ANTDeviceDatum val) {
@@ -66,7 +76,7 @@ void ANTDevice::addDatum(const char *name, ANTDeviceDatum val) {
 }
 
 void ANTDevice::processMessage(ANTMessage *message) {
-    uint8_t *data = message->getData();
+    auto data = message->getData();
     int dataLen = message->getDataLen();
 
     if (dataLen < 8) {
@@ -119,7 +129,7 @@ ANTDeviceFEC::ANTDeviceFEC(const ANTDeviceID &id)
 void ANTDeviceFEC::processMessage(ANTMessage *message) {
     ANTDevice::processMessage(message);
 
-    uint8_t *data = message->getData();
+    auto data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
 
@@ -222,7 +232,7 @@ ANTDevicePWR::ANTDevicePWR(const ANTDeviceID &id)
 void ANTDevicePWR::processMessage(ANTMessage *message) {
     ANTDevice::processMessage(message);
 
-    uint8_t *data = message->getData();
+    auto data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
 
@@ -316,7 +326,7 @@ ANTDeviceHR::ANTDeviceHR(const ANTDeviceID &id)
 void ANTDeviceHR::processMessage(ANTMessage *message) {
     ANTDevice::processMessage(message);
 
-    uint8_t *data = message->getData();
+    auto data = message->getData();
     int dataLen = message->getDataLen();
     time_point<Clock> ts = message->getTimestamp();
 

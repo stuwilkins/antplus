@@ -36,6 +36,7 @@ using std::chrono::milliseconds;
 #include <chrono>
 #include <string>
 #include <map>
+#include <memory>
 
 #include "antmessage.h"
 #include "debug.h"
@@ -68,7 +69,8 @@ class ANTDeviceDatum {
 
 typedef std::map<std::string, float> tMetaData;
 typedef std::map<std::string, ANTDeviceDatum> tData;
-typedef std::map<std::string, std::vector<ANTDeviceDatum>> tTsData;
+typedef std::shared_ptr<std::vector<ANTDeviceDatum>> tTsDatum;
+typedef std::map<std::string, tTsDatum> tTsData;
 
 class ANTDevice {
  public:
@@ -101,21 +103,21 @@ class ANTDevice {
     ANTDeviceID  getDeviceID(void)   { return devID; }
     std::string& getDeviceName(void) { return deviceName; }
 
-    tTsData& getTsData(void) {
+    std::shared_ptr<tTsData> getTsData(void) {
         return tsData;
     }
-    tData& getData(void) {
+    std::shared_ptr<tData> getData(void) {
         return data;
     }
-    tMetaData& getMetaData(void) {
+    std::shared_ptr<tMetaData> getMetaData(void) {
         return metaData;
     }
 
  private:
-    tData           data;
-    tTsData         tsData;
+    std::shared_ptr<tData>          data;
+    std::shared_ptr<tTsData>        tsData;
+    std::shared_ptr<tMetaData>      metaData;
     bool            storeTsData;
-    tMetaData       metaData;
     ANTDeviceID     devID;
     pthread_mutex_t thread_lock;
 

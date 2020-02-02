@@ -30,6 +30,8 @@
 #include <stdint.h>
 #include <cstdio>
 
+extern int _debug_output;
+
 void bytestream_to_string(char *out, size_t n_out,
         uint8_t *bytes, size_t n_bytes);
 
@@ -39,10 +41,10 @@ void bytestream_to_string(char *out, size_t n_out,
 
 #ifdef DEBUG_OUTPUT
 #define DEBUG_PRINT(fmt, ...) \
-  fprintf(stderr, "%-25s:%5d : %-20s: " fmt, \
+  if (_debug_output) fprintf(stderr, "%-25s:%5d : %-20s: " fmt, \
           __FILENAME__, __LINE__, __func__, __VA_ARGS__);
 #define DEBUG_COMMENT(fmt) \
-  fprintf(stderr, "%-25s:%5d : %-20s: " fmt, \
+  if (_debug_output) fprintf(stderr, "%-25s:%5d : %-20s: " fmt, \
           __FILENAME__, __LINE__, __func__);
 #else
 #define DEBUG_PRINT(fmt, ...) \

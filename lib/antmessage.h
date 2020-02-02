@@ -31,6 +31,7 @@
 #include <stdint.h>
 #include <chrono>
 #include <utility>
+#include <memory>
 
 #include "antdefs.h"
 
@@ -120,23 +121,22 @@ class ANTMessage {
 
     void         encode(uint8_t *msg, int *len);
     int          decode(uint8_t *data, int data_len);
-    uint8_t      getType(void)       { return antType;}
-    uint8_t      getChannel(void)    { return antChannel;}
-    uint8_t*     getData(void)       { return antData;}
-    uint8_t      getData(int n)      { return antData[n];}
-    int          getDataLen(void)    { return antDataLen;}
-    void         setTimestamp(void)  { ts = Clock::now(); }
-    time_point<Clock>
-                 getTimestamp(void)  { return ts; }
-    ANTDeviceID  getDeviceID(void)   { return antDeviceID; }
+    uint8_t      getType(void)               { return antType;}
+    uint8_t      getChannel(void)            { return antChannel;}
+    uint8_t      getData(int n)              { return antData[n];}
+    int          getDataLen(void)            { return antDataLen;}
+    void         setTimestamp(void)          { ts = Clock::now(); }
+    ANTDeviceID  getDeviceID(void)           { return antDeviceID; }
+    time_point<Clock> getTimestamp(void)     { return ts; }
+    std::shared_ptr<uint8_t[]> getData(void) { return antData;}
 
  private:
     uint8_t           antType;
     uint8_t           antChannel;
-    uint8_t*          antData;
     int               antDataLen;
     ANTDeviceID       antDeviceID;
     time_point<Clock> ts;
+    std::shared_ptr<uint8_t[]> antData;
 };
 
 #endif  // ANT_RECORDER_LIB_ANTMESSAGE_H_
