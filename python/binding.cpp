@@ -35,10 +35,28 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pyant, m) {
-    m.doc() = "ANT+ Utilities"
-    py::class_<ANTUSBInterface>(m, "ANTUSBInterface")
+PYBIND11_MODULE(_pyant, m) {
+    m.doc() = "ANT+ Utilities";
+
+    py::class_<ANTUSBInterface, std::shared_ptr<ANTUSBInterface>>
+        (m, "ANTUSBInterface")
+        .def(py::init())
         .def("open", &ANTUSBInterface::open)
-        .def("close", &ANTUSBInterface::close)
+        .def("close", &ANTUSBInterface::close);
+
+    py::class_<ANT>(m, "ANT")
+        .def(py::init<std::shared_ptr<ANTUSBInterface>>())
+        .def("init", &ANT::init)
+        .def("getChannel", &ANT::getChannel);
+
+    py::class_<ANTChannel, std::shared_ptr<ANTChannel>>
+        antchannel(m, "ANTChannel");
+    antchannel.def("start", &ANTChannel::start);
+    py::enum_<ANTChannel::TYPE>(antchannel, "TYPE")
+        .value("TYPE_NONE", ANTChannel::TYPE_NONE)
+        .value("TYPE_PAIR", ANTChannel::TYPE_PAIR)
+        .value("TYPE_HR", ANTChannel::TYPE_HR)
+        .value("TYPE_PWR", ANTChannel::TYPE_PWR)
+        .value("TYPE_FEC", ANTChannel::TYPE_FEC);
      // m.attr("__version__") = CENTROIDS_GIT_VERSION;
 }

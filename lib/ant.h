@@ -35,6 +35,7 @@
 #include <chrono>
 #include <vector>
 #include <queue>
+#include <memory>
 
 #include "antdefs.h"
 #include "antmessage.h"
@@ -53,26 +54,24 @@ class ANT {
         NOERROR = 0,
         ERROR = -1
     };
-    explicit ANT(ANTInterface *iface, int nChannels = 8);
+    explicit ANT(std::shared_ptr<ANTInterface> iface, int nChannels = 8);
     ~ANT(void);
     int init(void);
-    int startThreads(void);
-    int stopThreads(void);
 
-    ANTChannel& getChannel(uint8_t chan) {
-        return (antChannel[chan]);
+    std::shared_ptr<ANTChannel> getChannel(uint8_t chan) {
+        return antChannel[chan];
     }
-    std::vector<ANTChannel>& getChannels(void) {
-        return antChannel;
-    }
+    // std::vector<ANTChannel>* getChannels(void) {
+    //     return &antChannel;
+    // }
 
     int  getPollTime(void)    { return pollTime; }
     void setPollTime(int t)   { pollTime = t; }
     time_point<Clock> getStartTime(void) { return startTime; }
 
  private:
-    ANTInterface *iface;
-    std::vector<ANTChannel> antChannel;
+    std::shared_ptr<ANTInterface> iface;
+    std::vector<std::shared_ptr<ANTChannel>> antChannel;
     pthread_t listenerId;
     pthread_t pollerId;
     pthread_t processorId;
@@ -85,6 +84,8 @@ class ANT {
     pthread_mutex_t message_lock;
     pthread_cond_t message_cond;
 
+    int startThreads(void);
+    int stopThreads(void);
     void* listenerThread(void);
     void* pollerThread(void);
     void* processorThread(void);

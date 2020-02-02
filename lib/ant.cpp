@@ -33,7 +33,7 @@
 #include "antchannel.h"
 #include "debug.h"
 
-ANT::ANT(ANTInterface *interface, int nChannels) {
+ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
     threadRun     = false;
     pollTime      = 2000;  // ms
     extMessages   = true;
@@ -42,7 +42,9 @@ ANT::ANT(ANTInterface *interface, int nChannels) {
 
     DEBUG_PRINT("Creating %d channels.\n", nChannels);
     for (int i=0; i < nChannels; i++) {
-        antChannel.push_back(ANTChannel(ANTChannel::TYPE_NONE, i, iface));
+        // ANTChannel* c = new ANTChannel(ANTChannel::TYPE_NONE, i, iface);
+        antChannel.push_back(std::shared_ptr<ANTChannel>
+        (new ANTChannel(ANTChannel::TYPE_NONE, i, iface)));
     }
 
     // Set the start time
@@ -51,15 +53,24 @@ ANT::ANT(ANTInterface *interface, int nChannels) {
     // Setup the mutexes
     pthread_mutex_init(&message_lock, NULL);
     pthread_cond_init(&message_cond, NULL);
+
+    // Start the threads
+    startThreads();
 }
 
 ANT::~ANT(void) {
+    // Stop the threads
+    stopThreads();
     pthread_mutex_destroy(&message_lock);
     pthread_cond_destroy(&message_cond);
 }
 
 int ANT::init(void) {
-    return iface->setNetworkKey(0);
+    int rtn = 0;
+    rtn |= iface->reset();
+    rtn |= iface->setNetworkKey(0);
+
+    return rtn;
 }
 
 int ANT::startThreads(void) {
@@ -73,11 +84,6 @@ int ANT::startThreads(void) {
 
     DEBUG_COMMENT("Starting Processor Thread ...\n");
     pthread_create(&processorId, NULL, callProcessorThread, (void *)this);
-
-    DEBUG_COMMENT("Starting Channel Threads ...\n");
-    for (auto& chan : antChannel) {
-        chan.startThread();
-    }
 
     return NOERROR;
 }
@@ -98,9 +104,6 @@ int ANT::stopThreads(void) {
     pthread_join(processorId, NULL);
     DEBUG_COMMENT("Processor Thread Joined.\n");
 
-    for (auto& chan : antChannel) {
-        chan.stopThread();
-    }
     return NOERROR;
 }
 
@@ -116,12 +119,12 @@ void* ANT::pollerThread(void) {
             <std::chrono::milliseconds> (now - pollStart);
 
         if (poll.count() >= getPollTime()) {
-            for (ANTChannel& chan : antChannel) {
-                int state = chan.getState();
+            for (auto chan : antChannel) {
+                int state = chan->getState();
                 if ((state == ANTChannel::STATE_OPEN_UNPAIRED) ||
                         (state == ANTChannel::STATE_OPEN_PAIRED)) {
-                    if (chan.getType() == ANTChannel::TYPE_FEC) {
-                        iface->requestDataPage(chan.getChannelNum(),
+                    if (chan->getType() == ANTChannel::TYPE_FEC) {
+                        iface->requestDataPage(chan->getChannelNum(),
                                 ANT_DEVICE_COMMON_STATUS);
                         DEBUG_COMMENT("Polling completed\n");
                     }
@@ -177,14 +180,14 @@ void* ANT::processorThread(void) {
                 DEBUG_COMMENT("RESET OK\n");
                 break;
             case ANT_CHANNEL_EVENT:
-                antChannel[m.getChannel()].processEvent(&m);
+                antChannel[m.getChannel()]->processEvent(&m);
                 break;
             case ANT_CHANNEL_ID:
-                antChannel[m.getChannel()].processId(&m);
+                antChannel[m.getChannel()]->processId(&m);
                 break;
             case ANT_BROADCAST_DATA:
             case ANT_ACK_DATA:
-                antChannel[m.getChannel()].parseMessage(&m);
+                antChannel[m.getChannel()]->parseMessage(&m);
                 break;
             default:
                 DEBUG_PRINT("UNKNOWN TYPE 0x%02X\n",

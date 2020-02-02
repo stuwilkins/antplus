@@ -39,7 +39,8 @@ ANTDeviceParams antDeviceParams[] = {
     {  ANTChannel::TYPE_NONE, 0x00, 0x0000, 0x00 },
 };
 
-ANTChannel::ANTChannel(int type, int num, ANTInterface* interface) {
+ANTChannel::ANTChannel(int type, int num,
+        std::shared_ptr<ANTInterface> interface) {
     network             = 0x00;
     searchTimeout       = 0xFF;
     channelNum          = num;
@@ -56,9 +57,16 @@ ANTChannel::ANTChannel(int type, int num, ANTInterface* interface) {
     // Setup the mutexes
     pthread_mutex_init(&message_lock, NULL);
     pthread_cond_init(&message_cond, NULL);
+
+    // Start the thread
+    startThread();
 }
 
 ANTChannel::~ANTChannel(void) {
+    DEBUG_PRINT("chan = %d\n", channelNum);
+    // Stop the thread
+    stopThread();
+
     for (auto dev : deviceList) {
         switch (dev->getDeviceID().getType()) {
             case ANT_DEVICE_NONE:
@@ -284,10 +292,13 @@ int ANTChannel::processEvent(ANTMessage *m) {
         }
     }
 
+    DEBUG_PRINT("currentState = %d\n", currentState);
     return NOERROR;
 }
 
 int ANTChannel::changeStateTo(int state) {
+    DEBUG_PRINT("Changing State to %d\n", state);
+
     switch (state) {
         case STATE_ASSIGNED:
             iface->assignChannel(channelNum, channelType,
@@ -355,7 +366,7 @@ int ANTChannel::start(int type, uint16_t id,
 
     // Ok the next level is ASSIGNED
 
-    changeStateTo(ANTChannel::STATE_ASSIGNED);
+    changeStateTo(STATE_ASSIGNED);
 
     // If we wait .. spinlock until the channel is open
     // TODO(swilkins) : We should add a timeout
@@ -364,6 +375,7 @@ int ANTChannel::start(int type, uint16_t id,
         while ((currentState != STATE_OPEN_UNPAIRED)
                 && (currentState != STATE_OPEN_PAIRED)) {
             usleep(SLEEP_DURATION);
+            DEBUG_PRINT("currentState = %d\n", currentState);
         }
     }
 

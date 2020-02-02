@@ -31,6 +31,7 @@
 #include <set>
 #include <vector>
 #include <queue>
+#include <memory>
 #include "antinterface.h"
 #include "antdevice.h"
 
@@ -43,13 +44,13 @@ struct ANTDeviceParams {
 
 class ANTChannel {
  public:
-    enum {
+    enum ERROR {
         // The return values
         NOERROR     = 0,
         ERROR       = -1,
         ERROR_STATE = 1
     };
-    enum {
+    enum TYPE {
         // The channel types
         TYPE_NONE = 0,
         TYPE_HR   = 1,
@@ -57,7 +58,7 @@ class ANTChannel {
         TYPE_FEC  = 3,
         TYPE_PAIR = 4
     };
-    enum {
+    enum STATE {
         // The state machine to define
         // the various states for an ANT+ channel
         STATE_IDLE           = 0,
@@ -72,7 +73,7 @@ class ANTChannel {
         STATE_CLOSED         = 9
     };
 
-    ANTChannel(int type, int num, ANTInterface* interface);
+    ANTChannel(int type, int num, std::shared_ptr<ANTInterface> interface);
     ~ANTChannel(void);
 
     int        getChannelNum(void)          { return channelNum; }
@@ -100,10 +101,9 @@ class ANTChannel {
         return deviceList;
     }
 
+ private:
     int startThread(void);
     int stopThread(void);
-
- private:
     int  changeStateTo(int state);
 
     uint8_t  network;
@@ -115,7 +115,7 @@ class ANTChannel {
     uint8_t  extended;
     int      type;
     uint16_t deviceId;
-    ANTInterface* iface;
+    std::shared_ptr<ANTInterface> iface;
     ANTDeviceParams deviceParams;
     std::vector<ANTDevice*> deviceList;
 

@@ -18,10 +18,6 @@ with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
 with open(os.path.join(here, 'requirements.txt')) as f:
     requirements = f.read().split()
 
-# Do hack to understand if debug is set
-_debug = os.environ.get('CENTROIDS_DEBUG_OUTPUT', None)
-print(_debug)
-
 
 class CMakeExtension(Extension):
     def __init__(self, name, sourcedir=''):
@@ -64,11 +60,7 @@ class CMakeBuild(build_ext):
             build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            cmake_args += ['-DBUILD_DOCS=OFF']
-            cmake_args += ['-DBUILD_LIB=OFF']
-            if _debug is not None:
-                cmake_args += ['-DDEBUG_OUTPUT=ON']
-            build_args += ['--target', '_pycentroids']
+            build_args += ['--target', '_pyant']
             build_args += ['--', '-j{}'.format(cpus)]
 
         env = os.environ.copy()
@@ -87,19 +79,19 @@ cmdclass = versioneer.get_cmdclass()
 cmdclass['build_ext'] = CMakeBuild
 
 setup(
-    name='pycentroids',
+    name='pyant',
     author='Stuart B. Wilkins',
-    author_email='swilkins@bnl.gov',
-    description='Centroiding algorithms for CCD Single Photon Counting',
+    author_email='stuart@stuwilkins.org',
+    description='ANT+ Utilities',
     long_description=long_description,
     long_description_content_type='text/markdown',
-    license='BSD (3-clause)',
-    url='https://github.com/NSLS-II/centroids',
+    license='MIT',
+    url='https://github.com/stuwilkins/ant-recorder',
     packages=find_packages(),
     install_requires=requirements,
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
-    ext_modules=[CMakeExtension('_pycentroids')],
+    ext_modules=[CMakeExtension('_pyant')],
     cmdclass=cmdclass,
     zip_safe=False,
     version=versioneer.get_version(),
