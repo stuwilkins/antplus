@@ -368,11 +368,17 @@ int ANTChannel::start(int type, uint16_t id,
     // If we wait .. spinlock until the channel is open
     // TODO(swilkins) : We should add a timeout
 
+    auto start = Clock::now();
     if (wait) {
         while ((currentState != STATE_OPEN_UNPAIRED)
                 && (currentState != STATE_OPEN_PAIRED)) {
             usleep(SLEEP_DURATION);
             DEBUG_PRINT("currentState = %d\n", currentState);
+            auto t = std::chrono::duration_cast<std::chrono::seconds>
+                (Clock::now() - start).count();
+            if (t > 30) {
+                return ERROR;
+            }
         }
     }
 
