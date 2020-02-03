@@ -48,29 +48,27 @@ using std::chrono::time_point;
  * @brief 
  * 
  */
-class ANTDeviceDatum {
+class ANTDeviceData {
  public:
-    ANTDeviceDatum(void) {
-        value = 0;
+    ANTDeviceData(void) {
     }
-    ANTDeviceDatum(float v, time_point<Clock> t) {
-        setDatum(v, t);
+    void addDatum(float v, time_point<Clock> t) {
+        value.push_back(v);
+        ts.push_back(t);
     }
-    void setDatum(float v, time_point<Clock> t) {
-        value = v;
-        ts = t;
+    std::vector<float>& getValue(void) {
+        return value;
     }
-    float             getValue(void)     { return value; }
-    time_point<Clock> getTimestamp(void) { return ts; }
+    std::vector<time_point<Clock>>& getTimestamp(void) {
+        return ts;
+    }
  private:
-    float value;
-    time_point<Clock> ts;
+    std::vector<float> value;
+    std::vector<time_point<Clock>> ts;
 };
 
 typedef std::map<std::string, float> tMetaData;
-typedef std::map<std::string, ANTDeviceDatum> tData;
-typedef std::shared_ptr<std::vector<ANTDeviceDatum>> tTsDatum;
-typedef std::map<std::string, tTsDatum> tTsData;
+typedef std::map<std::string, ANTDeviceData> tTsData;
 
 class ANTDevice {
  public:
@@ -103,18 +101,14 @@ class ANTDevice {
     ANTDeviceID  getDeviceID(void)   { return devID; }
     std::string& getDeviceName(void) { return deviceName; }
 
-    std::shared_ptr<tTsData> getTsData(void) {
-        return tsData;
+    tTsData getTsData(void) {
+        return *tsData;
     }
-    std::shared_ptr<tData> getData(void) {
-        return data;
-    }
-    std::shared_ptr<tMetaData> getMetaData(void) {
-        return metaData;
+    tMetaData getMetaData(void) {
+        return *metaData;
     }
 
  private:
-    std::shared_ptr<tData>          data;
     std::shared_ptr<tTsData>        tsData;
     std::shared_ptr<tMetaData>      metaData;
     bool            storeTsData;
@@ -124,8 +118,8 @@ class ANTDevice {
  protected:
     virtual void processMessage(ANTMessage *message);
 
-    void addDatum(std::string name, ANTDeviceDatum val);
-    void addDatum(const char *name, ANTDeviceDatum val);
+    void addDatum(std::string name, float val, time_point<Clock> t);
+    void addDatum(const char *name, float val, time_point<Clock> t);
     void addMetaDatum(std::string name, float val);
     void addMetaDatum(const char *name, float val);
 

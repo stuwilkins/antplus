@@ -67,22 +67,22 @@ ANTChannel::~ANTChannel(void) {
     // Stop the thread
     stopThread();
 
-    for (auto dev : deviceList) {
-        switch (dev->getDeviceID().getType()) {
-            case ANT_DEVICE_NONE:
-                delete (ANTDeviceNONE*)dev;
-                break;
-            case ANT_DEVICE_HR:
-                delete (ANTDeviceHR*)dev;
-                break;
-            case ANT_DEVICE_FEC:
-                delete (ANTDeviceFEC*)dev;
-                break;
-            case ANT_DEVICE_PWR:
-                delete (ANTDevicePWR*)dev;
-                break;
-        }
-    }
+    // for (auto dev : deviceList) {
+    //     switch (dev->getDeviceID().getType()) {
+    //         case ANT_DEVICE_NONE:
+    //             delete (ANTDeviceNONE*)dev;
+    //             break;
+    //         case ANT_DEVICE_HR:
+    //             delete (ANTDeviceHR*)dev;
+    //             break;
+    //         case ANT_DEVICE_FEC:
+    //             delete (ANTDeviceFEC*)dev;
+    //             break;
+    //         case ANT_DEVICE_PWR:
+    //             delete (ANTDevicePWR*)dev;
+    //             break;
+    //     }
+    // }
 
     pthread_mutex_destroy(&message_lock);
     pthread_cond_destroy(&message_cond);
@@ -136,19 +136,14 @@ void* ANTChannel::thread(void) {
             continue;
         }
 
-        ANTDevice *device = nullptr;
-        for (ANTDevice *dev : deviceList) {
+        for (auto dev : deviceList) {
             if (*dev == devID) {
-                device = dev;
-                break;
+                dev->parseMessage(&m);
+                continue;
             }
         }
 
-        if (device == nullptr) {
-            device = addDevice(&devID);
-        }
-
-        device->parseMessage(&m);
+        addDevice(&devID)->parseMessage(&m);
     }
 
     return NULL;
@@ -172,7 +167,7 @@ void ANTChannel::setType(int t) {
     }
 }
 
-ANTDevice* ANTChannel::addDevice(ANTDeviceID *id) {
+std::shared_ptr<ANTDevice> ANTChannel::addDevice(ANTDeviceID *id) {
     ANTDevice *dev = nullptr;
 
     switch (id->getType()) {
@@ -193,10 +188,12 @@ ANTDevice* ANTChannel::addDevice(ANTDeviceID *id) {
     if (dev != nullptr) {
         DEBUG_PRINT("Adding device type = 0x%02X, %p\n",
                 id->getType(), (void*)dev);
-        deviceList.push_back(dev);
+        std::shared_ptr<ANTDevice> sharedDev(dev);
+        deviceList.push_back(sharedDev);
+        return sharedDev;
     }
 
-    return dev;
+    return nullptr;
 }
 
 void ANTChannel::parseMessage(ANTMessage *message) {

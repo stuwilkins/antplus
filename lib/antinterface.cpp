@@ -40,8 +40,6 @@ int ANTInterface::reset(void) {
     usleep(RESET_DURATION);
 
     ANTMessage reply;
-    // readMessage(&reply);
-    // reply.parse();
 
     return 0;
 }

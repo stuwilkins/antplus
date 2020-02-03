@@ -27,10 +27,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
+#include <pybind11/chrono.h>
 #include <vector>
 #include <memory>
 
 #include "ant.h"
+#include "antdevice.h"
 #include "antusbinterface.h"
 
 namespace py = pybind11;
@@ -59,12 +61,33 @@ PYBIND11_MODULE(_pyant, m) {
 
     py::class_<ANTChannel, std::shared_ptr<ANTChannel>>
         antchannel(m, "ANTChannel");
-    antchannel.def("start", &ANTChannel::start);
+        antchannel.def("start", &ANTChannel::start);
+        antchannel.def("getDeviceList", &ANTChannel::getDeviceList);
+
     py::enum_<ANTChannel::TYPE>(antchannel, "TYPE")
         .value("TYPE_NONE", ANTChannel::TYPE_NONE)
         .value("TYPE_PAIR", ANTChannel::TYPE_PAIR)
         .value("TYPE_HR", ANTChannel::TYPE_HR)
         .value("TYPE_PWR", ANTChannel::TYPE_PWR)
         .value("TYPE_FEC", ANTChannel::TYPE_FEC);
-     // m.attr("__version__") = CENTROIDS_GIT_VERSION;
+
+    py::class_<ANTDevice, std::shared_ptr<ANTDevice>>(m, "ANTDevice")
+        .def("getDeviceID", &ANTDevice::getDeviceID)
+        .def("getDeviceName", &ANTDevice::getDeviceName)
+        .def("getTsData", &ANTDevice::getTsData)
+        // .def("getData", &ANTDevice::getData)
+        .def("getMetaData", &ANTDevice::getMetaData);
+
+    py::class_<ANTDeviceID>(m, "ANTDeviceID")
+        .def(py::init<>())
+        .def("getID", &ANTDeviceID::getID)
+        .def("getType", &ANTDeviceID::getType)
+        .def("isValid", &ANTDeviceID::isValid);
+
+    py::class_<ANTDeviceData>(m, "ANTDeviceData")
+        .def(py::init<>())
+        .def("getValue", &ANTDeviceData::getValue)
+        .def("getTimestamp", &ANTDeviceData::getTimestamp);
+
+     m.attr("__version__") = ANT_GIT_VERSION;
 }

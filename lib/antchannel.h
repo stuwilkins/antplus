@@ -96,8 +96,8 @@ class ANTChannel {
     void parseMessage(ANTMessage *message);
     int  processId(ANTMessage *m);
 
-    ANTDevice* addDevice(ANTDeviceID *id);
-    std::vector<ANTDevice*> getDeviceList(void) {
+    std::shared_ptr<ANTDevice> addDevice(ANTDeviceID *id);
+    std::vector<std::shared_ptr<ANTDevice>> getDeviceList(void) {
         return deviceList;
     }
 
@@ -117,7 +117,7 @@ class ANTChannel {
     uint16_t deviceId;
     std::shared_ptr<ANTInterface> iface;
     ANTDeviceParams deviceParams;
-    std::vector<ANTDevice*> deviceList;
+    std::vector<std::shared_ptr<ANTDevice>> deviceList;
 
     bool     threadRun;
     pthread_t       threadId;

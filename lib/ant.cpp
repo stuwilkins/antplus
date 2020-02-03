@@ -39,6 +39,7 @@ ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
     extMessages   = true;
 
     iface = interface;
+    iface->open();
 
     DEBUG_PRINT("Creating %d channels.\n", nChannels);
     for (int i=0; i < nChannels; i++) {
