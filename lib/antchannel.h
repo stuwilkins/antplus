@@ -106,6 +106,7 @@ class ANTChannel {
     int stopThread(void);
     int  changeStateTo(int state);
 
+    int      channelStartTimeout;
     uint8_t  network;
     int      currentState;
     uint8_t  channelType;

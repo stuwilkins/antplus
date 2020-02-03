@@ -51,6 +51,7 @@ ANTChannel::ANTChannel(int type, int num,
     extended            = 0x00;
     iface               = interface;
     threadRun           = true;
+    channelStartTimeout = 60;  // seconds
 
     setType(type);
 
@@ -361,22 +362,20 @@ int ANTChannel::start(int type, uint16_t id,
         return ERROR;
     }
 
-    // Ok the next level is ASSIGNED
+    // Start with ASSIGNING the channel
 
     changeStateTo(STATE_ASSIGNED);
 
-    // If we wait .. spinlock until the channel is open
-    // TODO(swilkins) : We should add a timeout
-
-    auto start = Clock::now();
+    // Spinlock until timeout
+    auto start = std::chrono::steady_clock::now();
     if (wait) {
         while ((currentState != STATE_OPEN_UNPAIRED)
                 && (currentState != STATE_OPEN_PAIRED)) {
             usleep(SLEEP_DURATION);
             DEBUG_PRINT("currentState = %d\n", currentState);
             auto t = std::chrono::duration_cast<std::chrono::seconds>
-                (Clock::now() - start).count();
-            if (t > 30) {
+                (std::chrono::steady_clock::now() - start).count();
+            if (t > channelStartTimeout) {
                 return ERROR;
             }
         }
