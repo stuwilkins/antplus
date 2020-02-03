@@ -137,14 +137,18 @@ void* ANTChannel::thread(void) {
             continue;
         }
 
+        bool found = false;
         for (auto dev : deviceList) {
             if (*dev == devID) {
                 dev->parseMessage(&m);
-                continue;
+                found = true;
+                break;
             }
         }
 
-        addDevice(&devID)->parseMessage(&m);
+        if (!found) {
+            addDevice(&devID)->parseMessage(&m);
+        }
     }
 
     return NULL;
