@@ -35,16 +35,10 @@
 
 namespace py = pybind11;
 
-int _debug_output = 1;
-
-void set_debug(int n) {
-    _debug_output = n;
-}
-
 PYBIND11_MODULE(_pyantplus, m) {
     m.doc() = "ANT+ Utilities";
 
-    m.def("set_debug", &set_debug);
+    m.def("set_debug", &antplus_set_debug);
 
     py::class_<ANTUSBInterface, std::shared_ptr<ANTUSBInterface>>
         (m, "ANTUSBInterface")

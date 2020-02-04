@@ -44,8 +44,10 @@
 #define ANTPLUS_SLEEP_DURATION                      50000L
 
 //
-// Version info created by cmake
+// Version / Debug info created by cmake
 //
+
+void antplus_set_debug(int d);
 
 extern const char* ANTPLUS_GIT_REV;
 extern const char* ANTPLUS_GIT_BRANCH;

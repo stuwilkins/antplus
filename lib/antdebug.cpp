@@ -25,7 +25,14 @@
 //
 
 #include <stdio.h>
+#include "antplus.h"
 #include "antdebug.h"
+
+int _debug_output = 1;
+
+void antplus_set_debug(int d) {
+    _debug_output = d;
+}
 
 void bytestream_to_string(char *out, size_t n_out,
         uint8_t *bytes, size_t n_bytes) {
