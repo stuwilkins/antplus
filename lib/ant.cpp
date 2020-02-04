@@ -51,7 +51,7 @@ ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
     }
 
     // Set the start time
-    startTime = Clock::now();
+    startTime = ant_clock::now();
 
     // Setup the mutexes
     pthread_mutex_init(&message_lock, NULL);
@@ -113,10 +113,10 @@ int ANT::stopThreads(void) {
 void* ANT::pollerThread(void) {
     DEBUG_COMMENT("Poller Thread Started\n");
 
-    time_point<Clock> pollStart = Clock::now();
+    time_point<ant_clock> pollStart = ant_clock::now();
 
     while (threadRun) {
-        time_point<Clock> now = Clock::now();
+        time_point<ant_clock> now = ant_clock::now();
 
         auto poll = std::chrono::duration_cast
             <std::chrono::milliseconds> (now - pollStart);
@@ -134,7 +134,7 @@ void* ANT::pollerThread(void) {
                 }
             }
 
-            pollStart = Clock::now();
+            pollStart = ant_clock::now();
 
         } else {
             usleep(ANTPLUS_SLEEP_DURATION);  // be a nice thread ...

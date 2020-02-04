@@ -54,10 +54,10 @@ extern const char* ANTPLUS_GIT_BRANCH;
 extern const char* ANTPLUS_GIT_VERSION;
 
 //
-// Clocks
+// Clocks defined ant_clocks
 //
 
-using Clock = std::chrono::steady_clock;
+using ant_clock = std::chrono::steady_clock;
 using std::chrono::time_point;
 
 /**
@@ -155,9 +155,9 @@ class ANTMessage {
     uint8_t      getChannel(void)            { return antChannel;}
     uint8_t      getData(int n)              { return antData[n];}
     int          getDataLen(void)            { return antDataLen;}
-    void         setTimestamp(void)          { ts = Clock::now(); }
+    void         setTimestamp(void)          { ts = ant_clock::now(); }
     ANTDeviceID  getDeviceID(void)           { return antDeviceID; }
-    time_point<Clock> getTimestamp(void)     { return ts; }
+    time_point<ant_clock> getTimestamp(void)     { return ts; }
     std::shared_ptr<uint8_t[]> getData(void) { return antData;}
 
  private:
@@ -165,7 +165,7 @@ class ANTMessage {
     uint8_t           antChannel;
     int               antDataLen;
     ANTDeviceID       antDeviceID;
-    time_point<Clock> ts;
+    time_point<ant_clock> ts;
     std::shared_ptr<uint8_t[]> antData;
 };
 
@@ -177,19 +177,19 @@ class ANTDeviceData {
  public:
     ANTDeviceData(void) {
     }
-    void addDatum(float v, time_point<Clock> t) {
+    void addDatum(float v, time_point<ant_clock> t) {
         value.push_back(v);
         ts.push_back(t);
     }
     std::vector<float>& getValue(void) {
         return value;
     }
-    std::vector<time_point<Clock>>& getTimestamp(void) {
+    std::vector<time_point<ant_clock>>& getTimestamp(void) {
         return ts;
     }
  private:
     std::vector<float> value;
-    std::vector<time_point<Clock>> ts;
+    std::vector<time_point<ant_clock>> ts;
 };
 
 typedef std::map<std::string, float> tMetaData;
@@ -243,8 +243,8 @@ class ANTDevice {
  protected:
     virtual void processMessage(ANTMessage *message);
 
-    void addDatum(std::string name, float val, time_point<Clock> t);
-    void addDatum(const char *name, float val, time_point<Clock> t);
+    void addDatum(std::string name, float val, time_point<ant_clock> t);
+    void addDatum(const char *name, float val, time_point<ant_clock> t);
     void addMetaDatum(std::string name, float val);
     void addMetaDatum(const char *name, float val);
 
@@ -469,7 +469,7 @@ class ANT {
                                          { return antChannel[chan]; }
     int  getPollTime(void)               { return pollTime; }
     void setPollTime(int t)              { pollTime = t; }
-    time_point<Clock> getStartTime(void) { return startTime; }
+    time_point<ant_clock> getStartTime(void) { return startTime; }
 
  private:
     std::shared_ptr<ANTInterface> iface;
@@ -480,7 +480,7 @@ class ANT {
     bool threadRun;
     int pollTime;
     bool extMessages;
-    time_point<Clock> startTime;
+    time_point<ant_clock> startTime;
 
     std::queue<ANTMessage> messageQueue;
     pthread_mutex_t message_lock;

@@ -374,14 +374,13 @@ int ANTChannel::start(int type, uint16_t id,
     changeStateTo(STATE_ASSIGNED);
 
     // Spinlock until timeout
-    auto start = std::chrono::steady_clock::now();
+    auto start = ant_clock::now();
     if (wait) {
         while ((currentState != STATE_OPEN_UNPAIRED)
                 && (currentState != STATE_OPEN_PAIRED)) {
             usleep(ANTPLUS_SLEEP_DURATION);
-            DEBUG_PRINT("currentState = %d\n", currentState);
             auto t = std::chrono::duration_cast<std::chrono::seconds>
-                (std::chrono::steady_clock::now() - start).count();
+                (ant_clock::now() - start).count();
             if (t > channelStartTimeout) {
                 return ERROR;
             }

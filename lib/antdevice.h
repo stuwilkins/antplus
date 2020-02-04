@@ -27,21 +27,4 @@
 #ifndef ANTPLUS_LIB_ANTDEVICE_H_
 #define ANTPLUS_LIB_ANTDEVICE_H_
 
-using std::chrono::duration_cast;
-using std::chrono::milliseconds;
-
-#include <pthread.h>
-
-#include <vector>
-#include <chrono>
-#include <string>
-#include <map>
-#include <memory>
-
-#include "antmessage.h"
-#include "antdebug.h"
-
-using Clock = std::chrono::steady_clock;
-using std::chrono::time_point;
-
 #endif  // ANTPLUS_LIB_ANTDEVICE_H_
