@@ -27,8 +27,6 @@
 #ifndef ANTPLUS_LIB_ANTDEFS_H_
 #define ANTPLUS_LIB_ANTDEFS_H_
 
-#define MAX_MESSAGE_SIZE                    128
-
 // ANT Messages
 #define ANT_SYNC_BYTE                       0xA4
 #define ANT_SYSTEM_RESET                    0x4A

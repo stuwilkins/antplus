@@ -27,11 +27,13 @@
 #include <string.h>
 #include <cstdio>
 #include <chrono>
+#include <vector>
+#include <memory>
 
 #include "ant.h"
 #include "antdevice.h"
 #include "antchannel.h"
-#include "debug.h"
+#include "antdebug.h"
 
 ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
     threadRun     = false;
@@ -134,7 +136,7 @@ void* ANT::pollerThread(void) {
             pollStart = Clock::now();
 
         } else {
-            usleep(SLEEP_DURATION);  // be a nice thread ...
+            usleep(ANTPLUS_SLEEP_DURATION);  // be a nice thread ...
         }
     }
 

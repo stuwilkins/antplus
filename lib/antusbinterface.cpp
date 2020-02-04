@@ -24,8 +24,12 @@
 // SOFTWARE.
 //
 
-#include "ant.h"
+#include <vector>
+
+#include "antplus.h"
 #include "antusbinterface.h"
+#include "antdefs.h"
+#include "antdebug.h"
 
 ANTUSBInterface::ANTUSBInterface(void) {
     usb_ctx       = NULL;
@@ -254,7 +258,7 @@ int ANTUSBInterface::bulkWrite(uint8_t *bytes, int size, int timeout) {
 
 int ANTUSBInterface::sendMessage(ANTMessage *message) {
     int msg_len;
-    uint8_t msg[MAX_MESSAGE_SIZE];
+    uint8_t msg[ANTPLUS_MAX_MESSAGE_SIZE];
 
     message->encode(msg, &msg_len);
 
@@ -262,8 +266,8 @@ int ANTUSBInterface::sendMessage(ANTMessage *message) {
 }
 
 int ANTUSBInterface::readMessage(std::vector<ANTMessage> *message) {
-    uint8_t bytes[MAX_MESSAGE_SIZE];
-    int nbytes = bulkRead(bytes, MAX_MESSAGE_SIZE, readTimeout);
+    uint8_t bytes[ANTPLUS_MAX_MESSAGE_SIZE];
+    int nbytes = bulkRead(bytes, ANTPLUS_MAX_MESSAGE_SIZE, readTimeout);
 
     if (nbytes > 0) {
         DEBUG_PRINT("Recieved %d bytes.\n", nbytes);

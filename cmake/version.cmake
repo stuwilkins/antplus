@@ -25,9 +25,9 @@ else()
     string(STRIP "${GIT_BRANCH}" GIT_BRANCH)
 endif()
 
-set(VERSION "const char* ANT_GIT_REV=\"${GIT_REV}\";
-const char* ANT_GIT_BRANCH=\"${GIT_BRANCH}\";
-const char* ANT_GIT_VERSION=\"${GIT_VERSION}${GIT_DIFF}\";")
+set(VERSION "const char* ANTPLUS_GIT_REV=\"${GIT_REV}\";
+const char* ANTPLUS_GIT_BRANCH=\"${GIT_BRANCH}\";
+const char* ANTPLUS_GIT_VERSION=\"${GIT_VERSION}${GIT_DIFF}\";")
 
 if(EXISTS ${CMAKE_BINARY_DIR}/version.cpp)
 	file(READ ${CMAKE_BINARY_DIR}/version.cpp VERSION_)

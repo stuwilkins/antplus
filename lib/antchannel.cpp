@@ -24,12 +24,15 @@
 // SOFTWARE.
 //
 
-#include <algorithm>
+#include <unistd.h>
 
-#include "ant.h"
-#include "antdevice.h"
+#include <algorithm>
+#include <memory>
+
+#include "antplus.h"
 #include "antchannel.h"
-#include "debug.h"
+#include "antdefs.h"
+#include "antdebug.h"
 
 ANTDeviceParams antDeviceParams[] = {
     {  ANTChannel::TYPE_HR,   0x78, 0x1F86, 0x39 },
@@ -375,7 +378,7 @@ int ANTChannel::start(int type, uint16_t id,
     if (wait) {
         while ((currentState != STATE_OPEN_UNPAIRED)
                 && (currentState != STATE_OPEN_PAIRED)) {
-            usleep(SLEEP_DURATION);
+            usleep(ANTPLUS_SLEEP_DURATION);
             DEBUG_PRINT("currentState = %d\n", currentState);
             auto t = std::chrono::duration_cast<std::chrono::seconds>
                 (std::chrono::steady_clock::now() - start).count();

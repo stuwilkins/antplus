@@ -25,7 +25,7 @@
 //
 
 #include <stdio.h>
-#include "debug.h"
+#include "antdebug.h"
 
 void bytestream_to_string(char *out, size_t n_out,
         uint8_t *bytes, size_t n_bytes) {

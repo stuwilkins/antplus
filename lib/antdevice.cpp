@@ -29,7 +29,7 @@
 
 #include "ant.h"
 #include "antdevice.h"
-#include "debug.h"
+#include "antdebug.h"
 
 ANTDevice::ANTDevice(void) {
     pthread_mutex_init(&thread_lock, NULL);

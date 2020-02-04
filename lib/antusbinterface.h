@@ -27,39 +27,4 @@
 #ifndef ANTPLUS_LIB_ANTUSBINTERFACE_H_
 #define ANTPLUS_LIB_ANTUSBINTERFACE_H_
 
-#include <unistd.h>
-#include <stdint.h>
-#include <pthread.h>
-#include <libusb-1.0/libusb.h>
-
-#include <vector>
-
-#include "ant.h"
-#include "antmessage.h"
-#include "debug.h"
-
-class ANTUSBInterface : public ANTInterface {
- public:
-    enum rtn {
-        NOERROR = 0,
-        ERROR = -1
-    };
-    ANTUSBInterface(void);
-    ~ANTUSBInterface(void);
-    int open(void);
-    int close(void);
-    int sendMessage(ANTMessage *message);
-    int readMessage(std::vector<ANTMessage> *message);
- private:
-    int bulkRead(uint8_t *bytes, int size, int timeout);
-    int bulkWrite(uint8_t *bytes, int size, int timeout);
-    libusb_context *usb_ctx;
-    libusb_device_handle *usb_handle;
-    libusb_config_descriptor *usb_config;
-    int readEndpoint;
-    int writeEndpoint;
-    int readTimeout;
-    int writeTimeout;
-};
-
 #endif  // ANTPLUS_LIB_ANTUSBINTERFACE_H_

@@ -26,11 +26,12 @@
 
 #include <unistd.h>
 
+#include "antplus.h"
 #include "antinterface.h"
-#include "antmessage.h"
-#include "debug.h"
-
+#include "antdefs.h"
 #include "ant_network_key.h"
+#include "antdebug.h"
+
 
 int ANTInterface::reset(void) {
     DEBUG_COMMENT("Sending ANT_SYSTEM_RESET\n");

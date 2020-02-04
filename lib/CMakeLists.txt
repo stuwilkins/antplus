@@ -5,20 +5,24 @@ set(SOURCE_FILES
 	ant.cpp    
 	antchannel.cpp
 	antdevice.cpp
-	debug.cpp
+	antdebug.cpp
 	antmessage.cpp
 	antinterface.cpp
 	antusbinterface.cpp
 )
 
-set(PUBLIC_INCLUDE_FILES 
+set(PRIVATE_INCLUDE_FILES 
 	ant.h
 	antchannel.h
 	antdevice.h 
-	debug.h 
+	antdebug.h 
 	antmessage.h 
 	antinterface.h 
 	antusbinterface.h 
+)
+
+set(PUBLIC_INCLUDE_FILES 
+	antplus.h
 )
 
 set_property(SOURCE ${CMAKE_BINARY_DIR}/version.cpp 

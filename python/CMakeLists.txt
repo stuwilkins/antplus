@@ -8,7 +8,7 @@ pybind11_add_module(_pyantplus EXCLUDE_FROM_ALL
 	${CMAKE_SOURCE_DIR}/lib/ant.cpp    
 	${CMAKE_SOURCE_DIR}/lib/antchannel.cpp
 	${CMAKE_SOURCE_DIR}/lib/antdevice.cpp
-	${CMAKE_SOURCE_DIR}/lib/debug.cpp
+	${CMAKE_SOURCE_DIR}/lib/antdebug.cpp
 	${CMAKE_SOURCE_DIR}/lib/antmessage.cpp
 	${CMAKE_SOURCE_DIR}/lib/antinterface.cpp
 	${CMAKE_SOURCE_DIR}/lib/antusbinterface.cpp

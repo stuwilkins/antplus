@@ -24,16 +24,20 @@
 // SOFTWARE.
 //
 
+#include <memory>
+
+#include "antplus.h"
 #include "antmessage.h"
-#include "debug.h"
+#include "antdefs.h"
+#include "antdebug.h"
 
 ANTMessage::ANTMessage(void) {
     antType = 0x00;
     antChannel = 0x00;
     antDataLen = 0;
 
-    antData = std::make_unique<uint8_t[]> (MAX_MESSAGE_SIZE);
-    for (int i=0; i < MAX_MESSAGE_SIZE; i++) {
+    antData = std::make_unique<uint8_t[]> (ANTPLUS_MAX_MESSAGE_SIZE);
+    for (int i=0; i < ANTPLUS_MAX_MESSAGE_SIZE; i++) {
         antData[i] = 0x00;
     }
 }

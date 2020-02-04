@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef ANTPLUS_LIB_DEBUG_H_
-#define ANTPLUS_LIB_DEBUG_H_
+#ifndef ANTPLUS_LIB_ANTDEBUG_H_
+#define ANTPLUS_LIB_ANTDEBUG_H_
 
 #include <stdint.h>
 #include <cstdio>
@@ -55,4 +55,4 @@ void bytestream_to_string(char *out, size_t n_out,
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
-#endif  // ANTPLUS_LIB_DEBUG_H_
+#endif  // ANTPLUS_LIB_ANTDEBUG_H_
