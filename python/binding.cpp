@@ -31,9 +31,7 @@
 #include <vector>
 #include <memory>
 
-#include "ant.h"
-#include "antdevice.h"
-#include "antusbinterface.h"
+#include "antplus.h"
 
 namespace py = pybind11;
 
@@ -90,5 +88,5 @@ PYBIND11_MODULE(_pyantplus, m) {
         .def("getValue", &ANTDeviceData::getValue)
         .def("getTimestamp", &ANTDeviceData::getTimestamp);
 
-     m.attr("__version__") = ANT_GIT_VERSION;
+     m.attr("__version__") = ANTPLUS_GIT_VERSION;
 }
