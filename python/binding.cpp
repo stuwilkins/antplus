@@ -72,6 +72,7 @@ PYBIND11_MODULE(_pyant, m) {
         .value("TYPE_FEC", ANTChannel::TYPE_FEC);
 
     py::class_<ANTDevice, std::shared_ptr<ANTDevice>>(m, "ANTDevice")
+        .def(py::init<>())
         .def("getDeviceID", &ANTDevice::getDeviceID)
         .def("getDeviceName", &ANTDevice::getDeviceName)
         .def("getTsData", &ANTDevice::getTsData)

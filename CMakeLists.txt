@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(antcxx VERSION 0.1.0)
+project(antplus VERSION 0.1.0)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 add_compile_options(-pedantic -Wall -Wextra)
@@ -14,9 +14,9 @@ cpplint_add_subdirectory(lib)
 cpplint_add_subdirectory(python)
 
 FIND_PACKAGE(Threads REQUIRED)
-FIND_PACKAGE(HDF5 1.10 COMPONENTS CXX REQUIRED)
-#FIND_PACKAGE(Config++ REQUIRED)
 FIND_PACKAGE(LibUSB1 REQUIRED)
+#FIND_PACKAGE(HDF5 1.10 COMPONENTS CXX REQUIRED)
+#FIND_PACKAGE(Config++ REQUIRED)
 
 # Add __FILENAME__ with short path
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__FILENAME__='\"$(subst ${CMAKE_SOURCE_DIR}/,,$(abspath $<))\"'")
@@ -34,4 +34,4 @@ add_custom_target(version_info DEPENDS ${CMAKE_BINARY_DIR}/version.cpp)
 
 add_subdirectory(lib)
 add_subdirectory(python)
-# add_subdirectory(docs/doxygen)
+add_subdirectory(docs/doxygen)

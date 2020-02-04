@@ -61,7 +61,7 @@ class CMakeBuild(build_ext):
             build_args += ['--', '/m']
         else:
             cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--target', '_pyant']
+            build_args += ['--target', '_pyantplus']
             build_args += ['--', '-j{}'.format(cpus)]
 
         env = os.environ.copy()
@@ -80,7 +80,7 @@ cmdclass = versioneer.get_cmdclass()
 cmdclass['build_ext'] = CMakeBuild
 
 setup(
-    name='pyant',
+    name='pyantplus',
     author='Stuart B. Wilkins',
     author_email='stuart@stuwilkins.org',
     description='ANT+ Utilities',
@@ -92,7 +92,7 @@ setup(
     install_requires=requirements,
     setup_requires=["pytest-runner"],
     tests_require=["pytest"],
-    ext_modules=[CMakeExtension('_pyant')],
+    ext_modules=[CMakeExtension('_pyantplus')],
     cmdclass=cmdclass,
     zip_safe=False,
     version=versioneer.get_version(),
