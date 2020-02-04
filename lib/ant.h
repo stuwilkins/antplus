@@ -27,19 +27,4 @@
 #ifndef ANTPLUS_LIB_ANT_H_
 #define ANTPLUS_LIB_ANT_H_
 
-#include <unistd.h>
-#include <stdint.h>
-#include <pthread.h>
-#include <libusb-1.0/libusb.h>
-
-#include <chrono>
-
-#include "antplus.h"
-#include "antdefs.h"
-#include "antmessage.h"
-#include "antchannel.h"
-#include "ant_network_key.h"
-
-
-
 #endif  // ANTPLUS_LIB_ANT_H_

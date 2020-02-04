@@ -24,16 +24,17 @@
 // SOFTWARE.
 //
 
-#include <string.h>
+#include <unistd.h>
+
 #include <cstdio>
 #include <chrono>
 #include <vector>
 #include <memory>
 
+#include "antplus.h"
 #include "ant.h"
-#include "antdevice.h"
-#include "antchannel.h"
 #include "antdebug.h"
+#include "antdefs.h"
 
 ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
     threadRun     = false;

@@ -27,9 +27,10 @@
 #include <iostream>
 #include <algorithm>
 
-#include "ant.h"
+#include "antplus.h"
 #include "antdevice.h"
 #include "antdebug.h"
+#include "antdefs.h"
 
 ANTDevice::ANTDevice(void) {
     pthread_mutex_init(&thread_lock, NULL);
