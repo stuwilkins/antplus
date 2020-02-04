@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef ANT_RECORDER_LIB_ANTCHANNEL_H_
-#define ANT_RECORDER_LIB_ANTCHANNEL_H_
+#ifndef ANTPLUS_LIB_ANTCHANNEL_H_
+#define ANTPLUS_LIB_ANTCHANNEL_H_
 
 #include <pthread.h>
 #include <set>
@@ -132,4 +132,4 @@ class ANTChannel {
     std::queue<ANTMessage> messageQueue;
 };
 
-#endif  // ANT_RECORDER_LIB_ANTCHANNEL_H_
+#endif  // ANTPLUS_LIB_ANTCHANNEL_H_

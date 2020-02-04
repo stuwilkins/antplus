@@ -25,8 +25,8 @@
 //
 //
 
-#ifndef ANT_RECORDER_LIB_ANTMESSAGE_H_
-#define ANT_RECORDER_LIB_ANTMESSAGE_H_
+#ifndef ANTPLUS_LIB_ANTMESSAGE_H_
+#define ANTPLUS_LIB_ANTMESSAGE_H_
 
 #include <stdint.h>
 #include <chrono>
@@ -139,4 +139,4 @@ class ANTMessage {
     std::shared_ptr<uint8_t[]> antData;
 };
 
-#endif  // ANT_RECORDER_LIB_ANTMESSAGE_H_
+#endif  // ANTPLUS_LIB_ANTMESSAGE_H_

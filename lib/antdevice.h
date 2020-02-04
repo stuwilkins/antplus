@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef ANT_RECORDER_LIB_ANTDEVICE_H_
-#define ANT_RECORDER_LIB_ANTDEVICE_H_
+#ifndef ANTPLUS_LIB_ANTDEVICE_H_
+#define ANTPLUS_LIB_ANTDEVICE_H_
 
 using std::chrono::duration_cast;
 using std::chrono::milliseconds;
@@ -165,4 +165,4 @@ class ANTDeviceHR : public ANTDevice {
     uint8_t lastToggleBit;
 };
 
-#endif  // ANT_RECORDER_LIB_ANTDEVICE_H_
+#endif  // ANTPLUS_LIB_ANTDEVICE_H_

@@ -24,8 +24,8 @@
 // SOFTWARE.
 //
 
-#ifndef ANT_RECORDER_LIB_ANTUSBINTERFACE_H_
-#define ANT_RECORDER_LIB_ANTUSBINTERFACE_H_
+#ifndef ANTPLUS_LIB_ANTUSBINTERFACE_H_
+#define ANTPLUS_LIB_ANTUSBINTERFACE_H_
 
 #include <unistd.h>
 #include <stdint.h>
@@ -62,4 +62,4 @@ class ANTUSBInterface : public ANTInterface {
     int writeTimeout;
 };
 
-#endif  // ANT_RECORDER_LIB_ANTUSBINTERFACE_H_
+#endif  // ANTPLUS_LIB_ANTUSBINTERFACE_H_
