@@ -1,5 +1,5 @@
 //
-// ant-recoder : ANT+ Utilities
+// antplus : ANT+ Utilities
 //
 // MIT License
 //
