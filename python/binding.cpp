@@ -43,7 +43,7 @@ void set_debug(int n) {
     _debug_output = n;
 }
 
-PYBIND11_MODULE(_pyant, m) {
+PYBIND11_MODULE(_pyantplus, m) {
     m.doc() = "ANT+ Utilities";
 
     m.def("set_debug", &set_debug);

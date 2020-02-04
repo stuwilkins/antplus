@@ -1,8 +1,8 @@
-import _pyant
+import pyantplus
 import time
-_pyant.set_debug(0)
-a = _pyant.ANTUSBInterface()
-b = _pyant.ANT(a)
+pyantplus._pyantplus.set_debug(0)
+a = pyantplus.ANTUSBInterface()
+b = pyantplus.ANT(a)
 b.init()
 c = b.getChannel(0)
 c.start(c.TYPE.TYPE_PAIR, 0x0000, True, True)
