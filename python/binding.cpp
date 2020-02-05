@@ -34,6 +34,7 @@
 #include "antplus.h"
 
 namespace py = pybind11;
+using pybind11::literals::operator""_a;
 
 PYBIND11_MODULE(_pyantplus, m) {
     m.doc() = "ANT+ Utilities";
@@ -53,7 +54,8 @@ PYBIND11_MODULE(_pyantplus, m) {
 
     py::class_<ANTChannel, std::shared_ptr<ANTChannel>>
         antchannel(m, "ANTChannel");
-        antchannel.def("start", &ANTChannel::start);
+        antchannel.def("start", &ANTChannel::start,
+            "type"_a, "id"_a = 0x0000, "wait"_a = 1);
         antchannel.def("getDeviceList", &ANTChannel::getDeviceList);
 
     py::enum_<ANTChannel::TYPE>(antchannel, "TYPE")
@@ -77,10 +79,10 @@ PYBIND11_MODULE(_pyantplus, m) {
         .def("getType", &ANTDeviceID::getType)
         .def("isValid", &ANTDeviceID::isValid);
 
-    py::class_<ANTDeviceData>(m, "ANTDeviceData")
-        .def(py::init<>())
-        .def("getValue", &ANTDeviceData::getValue)
-        .def("getTimestamp", &ANTDeviceData::getTimestamp);
+    py::class_<ANTDeviceData<float>>(m, "ANTDeviceData")
+        // .def(py::init<>())
+        .def("getValue", &ANTDeviceData<float>::getValue)
+        .def("getTimestamp", &ANTDeviceData<float>::getTimestamp);
 
      m.attr("__version__") = ANTPLUS_GIT_VERSION;
 }

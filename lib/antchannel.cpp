@@ -349,15 +349,14 @@ int ANTChannel::processId(ANTMessage *m) {
     return NOERROR;
 }
 
-int ANTChannel::start(int type, uint16_t id,
-        bool scanning, bool wait) {
+int ANTChannel::start(int type, uint16_t id, bool wait) {
     // Start a channel config
 
     deviceId = id;
     channelType = CHANNEL_TYPE_RX;
     setType(type);
 
-    if (scanning) {
+    if (type == TYPE_PAIR) {
         channelTypeExtended = CHANNEL_TYPE_EXT_BACKGROUND_SCAN;
     }
 
@@ -381,7 +380,10 @@ int ANTChannel::start(int type, uint16_t id,
             usleep(ANTPLUS_SLEEP_DURATION);
             auto t = std::chrono::duration_cast<std::chrono::seconds>
                 (ant_clock::now() - start).count();
+            DEBUG_PRINT("Waiting .. currentState = %d, t = %ld\n",
+                currentState, t)
             if (t > channelStartTimeout) {
+                DEBUG_COMMENT("Returning ERROR\n");
                 return ERROR;
             }
         }

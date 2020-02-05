@@ -37,8 +37,8 @@
 ANTDevice::ANTDevice(void) {
     pthread_mutex_init(&thread_lock, NULL);
 
-    tsData = std::make_shared<tTsData>();
-    metaData = std::make_shared<tMetaData>();
+    tsData = std::make_shared<ANTTsData>();
+    metaData = std::make_shared<ANTMetaData>();
 
     storeTsData = true;
 }

@@ -61,8 +61,8 @@ using ant_clock = std::chrono::steady_clock;
 using std::chrono::time_point;
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 class ANTDeviceID {
  public:
@@ -94,8 +94,8 @@ class ANTDeviceID {
 };
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 class ANTMessage {
  public:
@@ -170,30 +170,33 @@ class ANTMessage {
 };
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
-class ANTDeviceData {
+template <class T> class ANTDeviceData {
  public:
     ANTDeviceData(void) {
+        value = std::make_shared<std::vector<T>>();
+        ts = std::make_shared<std::vector<time_point<ant_clock>>>();
     }
-    void addDatum(float v, time_point<ant_clock> t) {
-        value.push_back(v);
-        ts.push_back(t);
+    void addDatum(T v, time_point<ant_clock> t) {
+        value->push_back(v);
+        ts->push_back(t);
     }
-    std::vector<float>& getValue(void) {
-        return value;
+    std::vector<T>& getValue(void) {
+        return *value;
     }
-    std::vector<time_point<ant_clock>>& getTimestamp(void) {
-        return ts;
+    std::vector<time_point<ant_clock>>&
+        getTimestamp(void) {
+        return *ts;
     }
  private:
-    std::vector<float> value;
-    std::vector<time_point<ant_clock>> ts;
+    std::shared_ptr<std::vector<T>> value;
+    std::shared_ptr<std::vector<time_point<ant_clock>>> ts;
 };
 
-typedef std::map<std::string, float> tMetaData;
-typedef std::map<std::string, ANTDeviceData> tTsData;
+typedef std::map<std::string, float> ANTMetaData;
+typedef std::map<std::string, ANTDeviceData<float>> ANTTsData;
 
 class ANTDevice {
  public:
@@ -226,16 +229,16 @@ class ANTDevice {
     ANTDeviceID  getDeviceID(void)   { return devID; }
     std::string& getDeviceName(void) { return deviceName; }
 
-    tTsData getTsData(void) {
+    ANTTsData getTsData(void) {
         return *tsData;
     }
-    tMetaData getMetaData(void) {
+    ANTMetaData getMetaData(void) {
         return *metaData;
     }
 
  private:
-    std::shared_ptr<tTsData>        tsData;
-    std::shared_ptr<tMetaData>      metaData;
+    std::shared_ptr<ANTTsData>        tsData;
+    std::shared_ptr<ANTMetaData>      metaData;
     bool            storeTsData;
     ANTDeviceID     devID;
     pthread_mutex_t thread_lock;
@@ -292,8 +295,8 @@ class ANTDeviceHR : public ANTDevice {
 
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 class ANTInterface {
  public:
@@ -317,8 +320,8 @@ class ANTInterface {
 };
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 class ANTUSBInterface : public ANTInterface {
  public:
@@ -345,8 +348,8 @@ class ANTUSBInterface : public ANTInterface {
 };
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 struct ANTDeviceParams {
     int      type;
@@ -356,8 +359,8 @@ struct ANTDeviceParams {
 };
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 class ANTChannel {
  public:
@@ -406,7 +409,7 @@ class ANTChannel {
     // void       setDeviceId(uint16_t id)     { deviceId = id; }
     // uint16_t   getDeviceId(void)            { return deviceId; }
 
-    int start(int type, uint16_t id, bool scanning, bool wait);
+    int start(int type, uint16_t id = 0x0000, bool wait = true);
     ANTDeviceParams getDeviceParams(void)   { return deviceParams; }
 
     int  processEvent(ANTMessage *m);
@@ -450,8 +453,8 @@ class ANTChannel {
 };
 
 /**
- * @brief 
- * 
+ * @brief
+ *
  */
 class ANT {
  public:
@@ -465,26 +468,32 @@ class ANT {
 
     int init(void);
 
-    std::shared_ptr<ANTChannel> getChannel(uint8_t chan)
-                                         { return antChannel[chan]; }
-    int  getPollTime(void)               { return pollTime; }
-    void setPollTime(int t)              { pollTime = t; }
-    time_point<ant_clock> getStartTime(void) { return startTime; }
+    std::shared_ptr<ANTChannel> getChannel(uint8_t chan);
+    int  getPollTime(void) {
+        return pollTime;
+    }
+    void setPollTime(int t) {
+        pollTime = t;
+    }
+    time_point<ant_clock> getStartTime(void) {
+        return startTime;
+    }
 
  private:
-    std::shared_ptr<ANTInterface> iface;
-    std::vector<std::shared_ptr<ANTChannel>> antChannel;
-    pthread_t listenerId;
-    pthread_t pollerId;
-    pthread_t processorId;
-    bool threadRun;
-    int pollTime;
     bool extMessages;
     time_point<ant_clock> startTime;
 
+    std::shared_ptr<ANTInterface> iface;
+    std::vector<std::shared_ptr<ANTChannel>> antChannel;
     std::queue<ANTMessage> messageQueue;
+
+    pthread_t listenerId;
+    pthread_t pollerId;
+    pthread_t processorId;
     pthread_mutex_t message_lock;
     pthread_cond_t message_cond;
+    bool threadRun;
+    int pollTime;
 
     int startThreads(void);
     int stopThreads(void);

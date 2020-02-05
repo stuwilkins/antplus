@@ -68,6 +68,15 @@ ANT::~ANT(void) {
     pthread_cond_destroy(&message_cond);
 }
 
+std::shared_ptr<ANTChannel> ANT::getChannel(uint8_t chan) {
+    // do some bounds checking
+    if (chan < antChannel.size()) {
+        return antChannel[chan];
+    }
+
+    return nullptr;
+}
+
 int ANT::init(void) {
     int rtn = 0;
     rtn |= iface->reset();
