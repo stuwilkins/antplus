@@ -36,7 +36,7 @@
 #include "antdebug.h"
 #include "antdefs.h"
 
-ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
+ANT::ANT(shared_ptr<ANTInterface> interface, int nChannels) {
     threadRun     = false;
     pollTime      = 2000;  // ms
     extMessages   = true;
@@ -46,7 +46,7 @@ ANT::ANT(std::shared_ptr<ANTInterface> interface, int nChannels) {
 
     DEBUG_PRINT("Creating %d channels.\n", nChannels);
     for (int i=0; i < nChannels; i++) {
-        antChannel.push_back(std::shared_ptr<ANTChannel>
+        antChannel.push_back(shared_ptr<ANTChannel>
             (new ANTChannel(ANTChannel::TYPE_NONE, i, iface)));
     }
 
@@ -68,7 +68,7 @@ ANT::~ANT(void) {
     pthread_cond_destroy(&message_cond);
 }
 
-std::shared_ptr<ANTChannel> ANT::getChannel(uint8_t chan) {
+shared_ptr<ANTChannel> ANT::getChannel(uint8_t chan) {
     // do some bounds checking
     if (chan < antChannel.size()) {
         return antChannel[chan];

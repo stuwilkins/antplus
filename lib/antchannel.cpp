@@ -43,7 +43,7 @@ ANTDeviceParams antDeviceParams[] = {
 };
 
 ANTChannel::ANTChannel(int type, int num,
-        std::shared_ptr<ANTInterface> interface) {
+        shared_ptr<ANTInterface> interface) {
     network             = 0x00;
     searchTimeout       = 0x05;
     channelNum          = num;
@@ -156,7 +156,7 @@ void ANTChannel::setType(int t) {
     }
 }
 
-std::shared_ptr<ANTDevice> ANTChannel::addDevice(ANTDeviceID *id) {
+shared_ptr<ANTDevice> ANTChannel::addDevice(ANTDeviceID *id) {
     ANTDevice *dev = nullptr;
 
     switch (id->getType()) {
@@ -177,7 +177,7 @@ std::shared_ptr<ANTDevice> ANTChannel::addDevice(ANTDeviceID *id) {
     if (dev != nullptr) {
         DEBUG_PRINT("Adding device type = 0x%02X, %p\n",
                 id->getType(), (void*)dev);
-        std::shared_ptr<ANTDevice> sharedDev(dev);
+        shared_ptr<ANTDevice> sharedDev(dev);
         deviceList.push_back(sharedDev);
         return sharedDev;
     }

@@ -54,6 +54,11 @@ extern const char* ANTPLUS_GIT_BRANCH;
 extern const char* ANTPLUS_GIT_VERSION;
 
 //
+// Defs from STL
+//
+using std::shared_ptr;
+
+//
 // Clocks defined ant_clocks
 //
 
@@ -158,7 +163,7 @@ class ANTMessage {
     void         setTimestamp(void)          { ts = ant_clock::now(); }
     ANTDeviceID  getDeviceID(void)           { return antDeviceID; }
     ant_time_point getTimestamp(void)        { return ts; }
-    std::shared_ptr<uint8_t[]> getData(void) { return antData;}
+    shared_ptr<uint8_t[]> getData(void) { return antData;}
 
  private:
     uint8_t           antType;
@@ -166,7 +171,7 @@ class ANTMessage {
     int               antDataLen;
     ANTDeviceID       antDeviceID;
     ant_time_point ts;
-    std::shared_ptr<uint8_t[]> antData;
+    shared_ptr<uint8_t[]> antData;
 };
 
 /**
@@ -184,16 +189,16 @@ template <class T> class ANTDeviceData {
         value->push_back(v);
         ts->push_back(ft);
     }
-    std::shared_ptr<std::vector<T>> getValue(void) {
+    shared_ptr<std::vector<T>> getValue(void) {
         return value;
     }
-    std::shared_ptr<std::vector<T>> getTimestamp(void) {
+    shared_ptr<std::vector<T>> getTimestamp(void) {
         return ts;
     }
 
  private:
-    std::shared_ptr<std::vector<T>> value;
-    std::shared_ptr<std::vector<T>> ts;
+    shared_ptr<std::vector<T>> value;
+    shared_ptr<std::vector<T>> ts;
 };
 
 typedef std::map<std::string, float> ANTMetaData;
@@ -223,16 +228,16 @@ class ANTDevice {
     ANTDeviceID  getDeviceID(void)   { return devID; }
     std::string& getDeviceName(void) { return deviceName; }
 
-    std::shared_ptr<ANTTsData> getTsData(void) {
+    shared_ptr<ANTTsData> getTsData(void) {
         return tsData;
     }
-    std::shared_ptr<ANTMetaData> getMetaData(void) {
+    shared_ptr<ANTMetaData> getMetaData(void) {
         return metaData;
     }
 
  private:
-    std::shared_ptr<ANTTsData>        tsData;
-    std::shared_ptr<ANTMetaData>      metaData;
+    shared_ptr<ANTTsData>        tsData;
+    shared_ptr<ANTMetaData>      metaData;
     bool            storeTsData;
     ANTDeviceID     devID;
     pthread_mutex_t thread_lock;
@@ -393,7 +398,7 @@ class ANTChannel {
         STATE_CLOSED         = 9
     };
 
-    ANTChannel(int type, int num, std::shared_ptr<ANTInterface> interface);
+    ANTChannel(int type, int num, shared_ptr<ANTInterface> interface);
     ~ANTChannel(void);
 
     int             getChannelNum(void)          { return channelNum; }
@@ -415,8 +420,8 @@ class ANTChannel {
     void parseMessage(ANTMessage *message);
     int  processId(ANTMessage *m);
 
-    std::shared_ptr<ANTDevice> addDevice(ANTDeviceID *id);
-    std::vector<std::shared_ptr<ANTDevice>> getDeviceList(void) {
+    shared_ptr<ANTDevice> addDevice(ANTDeviceID *id);
+    std::vector<shared_ptr<ANTDevice>> getDeviceList(void) {
         return deviceList;
     }
 
@@ -436,9 +441,9 @@ class ANTChannel {
     int      type;
     uint16_t deviceId;
     bool     autoOpen;
-    std::shared_ptr<ANTInterface> iface;
+    shared_ptr<ANTInterface> iface;
     ANTDeviceParams deviceParams;
-    std::vector<std::shared_ptr<ANTDevice>> deviceList;
+    std::vector<shared_ptr<ANTDevice>> deviceList;
 
     bool     threadRun;
     pthread_t       threadId;
@@ -463,13 +468,13 @@ class ANT {
         ERROR = -1
     };
 
-    explicit ANT(std::shared_ptr<ANTInterface> iface, int nChannels = 8);
+    explicit ANT(shared_ptr<ANTInterface> iface, int nChannels = 8);
     ~ANT(void);
 
     int init(void);
 
-    std::shared_ptr<ANTChannel> getChannel(uint8_t chan);
-    std::vector<std::shared_ptr<ANTChannel>> getChannels(void) {
+    shared_ptr<ANTChannel> getChannel(uint8_t chan);
+    std::vector<shared_ptr<ANTChannel>> getChannels(void) {
         return antChannel;
     }
     int  getPollTime(void) {
@@ -486,8 +491,8 @@ class ANT {
     bool extMessages;
     ant_time_point startTime;
 
-    std::shared_ptr<ANTInterface> iface;
-    std::vector<std::shared_ptr<ANTChannel>> antChannel;
+    shared_ptr<ANTInterface> iface;
+    std::vector<shared_ptr<ANTChannel>> antChannel;
     std::queue<ANTMessage> messageQueue;
 
     pthread_t listenerId;

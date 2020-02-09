@@ -34,6 +34,8 @@
 
 #include "antplus.h"
 
+using std::shared_ptr;
+
 namespace py = pybind11;
 using pybind11::literals::operator""_a;
 
@@ -54,18 +56,18 @@ PYBIND11_MODULE(_pyantplus, m) {
         py::buffer_protocol());
 
     py::class_<ANTUSBInterface,
-        std::shared_ptr<ANTUSBInterface>>(m, "ANTUSBInterface")
+        shared_ptr<ANTUSBInterface>>(m, "ANTUSBInterface")
         .def(py::init())
         .def("open", &ANTUSBInterface::open)
         .def("close", &ANTUSBInterface::close);
 
     py::class_<ANT>(m, "ANT")
-        .def(py::init<std::shared_ptr<ANTUSBInterface>>())
+        .def(py::init<shared_ptr<ANTUSBInterface>>())
         .def("init", &ANT::init)
         .def("getChannel", &ANT::getChannel)
         .def("getChannels", &ANT::getChannels);
 
-    py::class_<ANTChannel, std::shared_ptr<ANTChannel>>
+    py::class_<ANTChannel, shared_ptr<ANTChannel>>
         antchannel(m, "ANTChannel");
         antchannel.def("open", &ANTChannel::open,
             "type"_a, "id"_a = 0x0000, "wait"_a = 1);
@@ -78,7 +80,7 @@ PYBIND11_MODULE(_pyantplus, m) {
         .value("PWR", ANTChannel::TYPE_PWR)
         .value("FEC", ANTChannel::TYPE_FEC);
 
-    py::class_<ANTDevice, std::shared_ptr<ANTDevice>>(m, "ANTDevice")
+    py::class_<ANTDevice, shared_ptr<ANTDevice>>(m, "ANTDevice")
         .def(py::init<>())
         .def("getDeviceID", &ANTDevice::getDeviceID)
         .def("getDeviceName", &ANTDevice::getDeviceName)
@@ -92,7 +94,7 @@ PYBIND11_MODULE(_pyantplus, m) {
         .def("getType", &ANTDeviceID::getType)
         .def("isValid", &ANTDeviceID::isValid);
 
-    py::class_<ANTDeviceData<float>, std::shared_ptr<ANTDeviceData<float>>>
+    py::class_<ANTDeviceData<float>, shared_ptr<ANTDeviceData<float>>>
         (m, "ANTDeviceData")
         .def(py::init<>())
         .def("getValue", &ANTDeviceData<float>::getValue)
