@@ -71,6 +71,7 @@ PYBIND11_MODULE(_pyantplus, m) {
         antchannel(m, "ANTChannel");
         antchannel.def("open", &ANTChannel::open,
             "type"_a, "id"_a = 0x0000, "wait"_a = 1);
+        antchannel.def("close", &ANTChannel::close);
         antchannel.def("getDeviceList", &ANTChannel::getDeviceList);
 
     py::enum_<ANTChannel::TYPE>(m, "TYPE")
