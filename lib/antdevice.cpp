@@ -61,14 +61,14 @@ void ANTDevice::addMetaDatum(const char* name, float val) {
 }
 
 void ANTDevice::addDatum(std::string name, float val,
-        time_point<ant_clock> t) {
+        ant_time_point t) {
     if (storeTsData) {
         (*tsData)[name].addDatum(val, t);
     }
 }
 
 void ANTDevice::addDatum(const char *name, float val,
-        time_point<ant_clock> t) {
+        ant_time_point t) {
     addDatum(std::string(name), val, t);
 }
 
@@ -128,7 +128,7 @@ void ANTDeviceFEC::processMessage(ANTMessage *message) {
 
     auto data = message->getData();
     int dataLen = message->getDataLen();
-    time_point<ant_clock> ts = message->getTimestamp();
+    ant_time_point ts = message->getTimestamp();
 
     if (dataLen < 8) {
         DEBUG_COMMENT("Invalid FEC Message\n");
@@ -231,7 +231,7 @@ void ANTDevicePWR::processMessage(ANTMessage *message) {
 
     auto data = message->getData();
     int dataLen = message->getDataLen();
-    time_point<ant_clock> ts = message->getTimestamp();
+    ant_time_point ts = message->getTimestamp();
 
     if (dataLen < 8) {
         DEBUG_COMMENT("Invalid Power Message\n");
@@ -325,7 +325,7 @@ void ANTDeviceHR::processMessage(ANTMessage *message) {
 
     auto data = message->getData();
     int dataLen = message->getDataLen();
-    time_point<ant_clock> ts = message->getTimestamp();
+    ant_time_point ts = message->getTimestamp();
 
     if (dataLen < 8) {
         DEBUG_COMMENT("Invalid HR Message\n");

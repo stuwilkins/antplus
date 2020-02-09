@@ -45,7 +45,7 @@ ANTDeviceParams antDeviceParams[] = {
 ANTChannel::ANTChannel(int type, int num,
         std::shared_ptr<ANTInterface> interface) {
     network             = 0x00;
-    searchTimeout       = 0xFF;
+    searchTimeout       = 0x05;
     channelNum          = num;
     channelType         = CHANNEL_TYPE_RX;
     channelTypeExtended = 0x00;
@@ -54,7 +54,8 @@ ANTChannel::ANTChannel(int type, int num,
     extended            = 0x00;
     iface               = interface;
     threadRun           = true;
-    channelStartTimeout = 60;  // seconds
+    channelStartTimeout = 5;  // seconds
+    autoOpen            = true;
 
     setType(type);
 
@@ -67,27 +68,7 @@ ANTChannel::ANTChannel(int type, int num,
 }
 
 ANTChannel::~ANTChannel(void) {
-    DEBUG_PRINT("chan = %d\n", channelNum);
-    // Stop the thread
     stopThread();
-
-    // for (auto dev : deviceList) {
-    //     switch (dev->getDeviceID().getType()) {
-    //         case ANT_DEVICE_NONE:
-    //             delete (ANTDeviceNONE*)dev;
-    //             break;
-    //         case ANT_DEVICE_HR:
-    //             delete (ANTDeviceHR*)dev;
-    //             break;
-    //         case ANT_DEVICE_FEC:
-    //             delete (ANTDeviceFEC*)dev;
-    //             break;
-    //         case ANT_DEVICE_PWR:
-    //             delete (ANTDevicePWR*)dev;
-    //             break;
-    //     }
-    // }
-
     pthread_mutex_destroy(&message_lock);
     pthread_cond_destroy(&message_cond);
 }
@@ -275,7 +256,6 @@ int ANTChannel::processEvent(ANTMessage *m) {
         switch (eventCode) {
             case EVENT_RX_SEARCH_TIMEOUT:
                 DEBUG_PRINT("Search timeout on channel %d\n", channelNum);
-                currentState = STATE_OPEN_UNPAIRED;
                 break;
             case EVENT_RX_FAIL:
                 DEBUG_PRINT("RX Failed on channel %d\n", channelNum);
@@ -290,6 +270,15 @@ int ANTChannel::processEvent(ANTMessage *m) {
             case EVENT_TRANSFER_TX_COMPLETED:
                 DEBUG_PRINT("TX Transfer Completed on channel %d\n",
                         channelNum);
+                break;
+            case EVENT_CHANNEL_CLOSED:
+                DEBUG_PRINT("Channel closed %d\n", channelNum);
+                currentState = STATE_CLOSED;
+                // If we reopen, we can try now
+                if (autoOpen) {
+                    // Attempt to open the channel
+                    iface->openChannel(channelNum, true);
+                }
                 break;
             default:
                 DEBUG_PRINT("Unknown response 0x%02X\n", eventCode);
@@ -349,7 +338,7 @@ int ANTChannel::processId(ANTMessage *m) {
     return NOERROR;
 }
 
-int ANTChannel::start(int type, uint16_t id, bool wait) {
+int ANTChannel::open(int type, uint16_t id, bool wait) {
     // Start a channel config
 
     deviceId = id;
@@ -392,3 +381,8 @@ int ANTChannel::start(int type, uint16_t id, bool wait) {
     return NOERROR;
 }
 
+int ANTChannel::close(void) {
+    autoOpen = false;
+    changeStateTo(STATE_CLOSED);
+    return NOERROR;
+}

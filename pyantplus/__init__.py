@@ -1,6 +1,6 @@
 import _pyantplus
 from _pyantplus import (ANT, ANTChannel, ANTDevice, ANTDeviceData,
-                        ANTUSBInterface, ANTDeviceID) 
+                        ANTUSBInterface, ANTDeviceID, TYPE)
 
 __all__ = ['_pyantplus']
 

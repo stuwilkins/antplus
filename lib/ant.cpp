@@ -78,11 +78,10 @@ std::shared_ptr<ANTChannel> ANT::getChannel(uint8_t chan) {
 }
 
 int ANT::init(void) {
-    int rtn = 0;
-    rtn |= iface->reset();
-    rtn |= iface->setNetworkKey(0);
+    iface->reset();
+    iface->setNetworkKey(0);
 
-    return rtn;
+    return NOERROR;
 }
 
 int ANT::startThreads(void) {
@@ -122,10 +121,10 @@ int ANT::stopThreads(void) {
 void* ANT::pollerThread(void) {
     DEBUG_COMMENT("Poller Thread Started\n");
 
-    time_point<ant_clock> pollStart = ant_clock::now();
+    ant_time_point pollStart = ant_clock::now();
 
     while (threadRun) {
-        time_point<ant_clock> now = ant_clock::now();
+        ant_time_point now = ant_clock::now();
 
         auto poll = std::chrono::duration_cast
             <std::chrono::milliseconds> (now - pollStart);
