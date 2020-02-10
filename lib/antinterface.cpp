@@ -46,7 +46,7 @@ int ANTInterface::reset(void) {
 }
 
 int ANTInterface::setNetworkKey(uint8_t net) {
-    uint8_t key[] = ANT_NETWORK_KEY;
+    uint8_t key[] = ANTPLUS_NETWORK_KEY;
 
     DEBUG_COMMENT("Sending ANT_SET_NETWORK\n");
     ANTMessage netkey(ANT_SET_NETWORK, net, key, ANT_NETWORK_KEY_LEN);

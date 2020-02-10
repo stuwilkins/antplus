@@ -4,10 +4,6 @@
 *.swo
 *.swn
 
-# Dont publish the ANT KEY!
-
-ant_network_key.h
-
 # Ignore CMake Build
 
 build

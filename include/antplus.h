@@ -40,8 +40,8 @@
 #include "antinterface.h"
 #include "antchannel.h"
 
-#define ANTPLUS_MAX_MESSAGE_SIZE                    128
-#define ANTPLUS_SLEEP_DURATION                      50000L
+#define ANTPLUS_MAX_MESSAGE_SIZE   128
+#define ANTPLUS_SLEEP_DURATION     50000L
 
 //
 // Version / Debug info created by cmake
@@ -56,6 +56,7 @@ extern const char* ANTPLUS_GIT_VERSION;
 //
 // Defs from STL
 //
+
 using std::shared_ptr;
 
 //
@@ -64,6 +65,12 @@ using std::shared_ptr;
 
 using ant_clock = std::chrono::steady_clock;
 typedef std::chrono::time_point<ant_clock> ant_time_point;
+
+//
+// Typedefs for standard types
+//
+
+typedef double ANTData;
 
 /**
  * @brief
@@ -166,10 +173,10 @@ class ANTMessage {
     shared_ptr<uint8_t[]> getData(void) { return antData;}
 
  private:
-    uint8_t           antType;
-    uint8_t           antChannel;
-    int               antDataLen;
-    ANTDeviceID       antDeviceID;
+    uint8_t        antType;
+    uint8_t        antChannel;
+    int            antDataLen;
+    ANTDeviceID    antDeviceID;
     ant_time_point ts;
     shared_ptr<uint8_t[]> antData;
 };
@@ -200,6 +207,10 @@ template <class T> class ANTDeviceData {
     shared_ptr<std::vector<T>> value;
     shared_ptr<std::vector<T>> ts;
 };
+
+//
+// Typedefs for standard types
+//
 
 typedef std::map<std::string, float> ANTMetaData;
 typedef std::map<std::string, ANTDeviceData<float>> ANTTsData;
@@ -235,20 +246,16 @@ class ANTDevice {
         return metaData;
     }
 
- private:
-    shared_ptr<ANTTsData>        tsData;
-    shared_ptr<ANTMetaData>      metaData;
-    bool            storeTsData;
-    ANTDeviceID     devID;
-    pthread_mutex_t thread_lock;
-
  protected:
+    std::string deviceName;
+
     void lock(void) {
         pthread_mutex_lock(&thread_lock);
     }
     void unlock(void) {
         pthread_mutex_unlock(&thread_lock);
     }
+
     virtual void processMessage(ANTMessage *message);
 
     void addDatum(std::string name, float val, ant_time_point t);
@@ -256,9 +263,12 @@ class ANTDevice {
     void addMetaDatum(std::string name, float val);
     void addMetaDatum(const char *name, float val);
 
-    std::vector<std::string> valueNames;
-    std::vector<std::string> metaNames;
-    std::string              deviceName;
+ private:
+    shared_ptr<ANTTsData>        tsData;
+    shared_ptr<ANTMetaData>      metaData;
+    bool            storeTsData;
+    ANTDeviceID     devID;
+    pthread_mutex_t thread_lock;
 };
 
 class ANTDeviceNONE : public ANTDevice {
